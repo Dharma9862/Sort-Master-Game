@@ -24,6 +24,8 @@ import {
   ChevronRight,
   AlertCircle,
   Bot,
+  WifiOff,
+  Wifi,
 } from 'lucide-react';
 import confetti from 'canvas-confetti';
 import { PlayerProfile, WalletLedgerEntry, WithdrawalRecord } from '../types/game';
@@ -32,6 +34,7 @@ import { sounds } from '../utils/audio';
 interface WalletModalProps {
   isOpen: boolean;
   profile: PlayerProfile;
+  isOnline?: boolean;
   onClose: () => void;
   onOpenWithdraw: () => void;
   onOpenReferral?: () => void;
@@ -60,6 +63,7 @@ export const POINT_TIERS = [
 export const WalletModal: React.FC<WalletModalProps> = ({
   isOpen,
   profile,
+  isOnline = true,
   onClose,
   onOpenWithdraw,
   onOpenReferral,
@@ -100,7 +104,7 @@ export const WalletModal: React.FC<WalletModalProps> = ({
 
   // Handle instant points to wallet cash conversion
   const handlePerformConversion = () => {
-    if (!isConvertUnlocked || !hasEnoughPointsForConvert) {
+    if (!isOnline || !isConvertUnlocked || !hasEnoughPointsForConvert) {
       sounds.playError();
       return;
     }
@@ -524,6 +528,18 @@ export const WalletModal: React.FC<WalletModalProps> = ({
             {/* TAB 2: CONVERT POINTS TO CASH */}
             {activeTab === 'convert' && (
               <div className="space-y-4">
+                {!isOnline && (
+                  <div className="p-3 rounded-2xl bg-amber-950/70 border border-amber-500/50 text-amber-200 text-xs flex items-start space-x-2">
+                    <WifiOff className="w-4 h-4 text-amber-400 shrink-0 mt-0.5" />
+                    <div>
+                      <span className="font-bold text-amber-300">Point Converter Offline:</span>
+                      <span className="text-amber-200/90 ml-1">
+                        Converting Points to Bank Cash is paused in offline mode. Connect to the internet to complete point conversions.
+                      </span>
+                    </div>
+                  </div>
+                )}
+
                 <div className="p-4 rounded-2xl bg-gradient-to-r from-emerald-950/60 via-slate-900 to-slate-950 border border-emerald-500/30">
                   <div className="flex items-center justify-between">
                     <div>
@@ -667,24 +683,35 @@ export const WalletModal: React.FC<WalletModalProps> = ({
                 {/* Conversion Action Button */}
                 <button
                   type="button"
-                  disabled={!isConvertUnlocked || !hasEnoughPointsForConvert}
+                  disabled={!isOnline || !isConvertUnlocked || !hasEnoughPointsForConvert}
                   onClick={handlePerformConversion}
                   className={`w-full py-3.5 px-4 rounded-2xl font-black text-sm shadow-xl flex items-center justify-center space-x-2 transition-all cursor-pointer ${
-                    isConvertUnlocked && hasEnoughPointsForConvert
+                    isOnline && isConvertUnlocked && hasEnoughPointsForConvert
                       ? 'bg-gradient-to-r from-emerald-500 via-teal-500 to-emerald-600 hover:from-emerald-400 hover:to-teal-400 text-slate-950 shadow-emerald-500/30 active:scale-98'
+                      : !isOnline
+                      ? 'bg-amber-950/60 text-amber-300 border border-amber-500/40 cursor-not-allowed'
                       : !isConvertUnlocked
                       ? 'bg-amber-950/60 text-amber-300 border border-amber-500/40 cursor-not-allowed'
                       : 'bg-slate-800 text-slate-400 border border-slate-700 cursor-not-allowed'
                   }`}
                 >
-                  <RefreshCw className="w-4 h-4" />
-                  <span>
-                    {!isConvertUnlocked
-                      ? `Locked: Reach Level ${requiredLevelForConvert}`
-                      : !hasEnoughPointsForConvert
-                      ? `Need ${Math.max(0, selectedConvertPoints - currentPoints).toLocaleString()} More Points`
-                      : `Credit ${currencyConfig.symbol}${convertCashYield.toFixed(2)} to Virtual Wallet`}
-                  </span>
+                  {!isOnline ? (
+                    <>
+                      <WifiOff className="w-4 h-4 text-amber-400" />
+                      <span>Converter Offline: Connect to Internet</span>
+                    </>
+                  ) : (
+                    <>
+                      <RefreshCw className="w-4 h-4" />
+                      <span>
+                        {!isConvertUnlocked
+                          ? `Locked: Reach Level ${requiredLevelForConvert}`
+                          : !hasEnoughPointsForConvert
+                          ? `Need ${Math.max(0, selectedConvertPoints - currentPoints).toLocaleString()} More Points`
+                          : `Credit ${currencyConfig.symbol}${convertCashYield.toFixed(2)} to Virtual Vault`}
+                      </span>
+                    </>
+                  )}
                 </button>
               </div>
             )}

@@ -26,6 +26,9 @@ import {
   Lock,
   Unlock,
   Award,
+  WifiOff,
+  Wifi,
+  AlertTriangle,
 } from 'lucide-react';
 import confetti from 'canvas-confetti';
 import { PlayerProfile, WithdrawalRecord, PayoutMethod } from '../types/game';
@@ -34,6 +37,7 @@ import { sounds } from '../utils/audio';
 interface WithdrawModalProps {
   isOpen: boolean;
   profile: PlayerProfile;
+  isOnline?: boolean;
   onWithdrawSuccess: (record: WithdrawalRecord) => void;
   onBonusPointsClaimed?: (bonusPoints: number) => void;
   onClose: () => void;
@@ -73,6 +77,7 @@ export const POINT_TIERS = [
 export const WithdrawModal: React.FC<WithdrawModalProps> = ({
   isOpen,
   profile,
+  isOnline = true,
   onWithdrawSuccess,
   onBonusPointsClaimed,
   onClose,
@@ -118,11 +123,11 @@ export const WithdrawModal: React.FC<WithdrawModalProps> = ({
   const requiredLevel = getRequiredLevelForPoints(pointsToWithdraw);
   const isLevelUnlocked = playerLevel >= requiredLevel;
   const levelsNeeded = Math.max(0, requiredLevel - playerLevel);
-  const isReadyToWithdraw = hasEnoughPoints && isLevelUnlocked;
+  const isReadyToWithdraw = isOnline && hasEnoughPoints && isLevelUnlocked;
 
   // Process Interactive Bank Payout
   const handleInitiateWithdrawal = () => {
-    if (!isReadyToWithdraw || isProcessing) {
+    if (!isOnline || !isReadyToWithdraw || isProcessing) {
       sounds.playError();
       return;
     }
@@ -238,6 +243,17 @@ export const WithdrawModal: React.FC<WithdrawModalProps> = ({
 
           {/* User Live Balance Summary Card */}
           <div className="mt-3 p-4 rounded-2xl bg-gradient-to-br from-emerald-950/80 via-slate-900 to-teal-950/80 border border-emerald-500/40 shadow-lg relative overflow-hidden">
+            {!isOnline && (
+              <div className="mb-3 p-2.5 rounded-xl bg-amber-950/70 border border-amber-500/50 text-amber-200 text-xs flex items-start space-x-2">
+                <WifiOff className="w-4 h-4 text-amber-400 shrink-0 mt-0.5" />
+                <div>
+                  <span className="font-bold text-amber-300">Offline Mode Active:</span>
+                  <span className="text-amber-200/90 ml-1">
+                    Points-to-Bank conversion & cashouts require an active internet connection.
+                  </span>
+                </div>
+              </div>
+            )}
             <div className="flex items-center justify-between mb-2">
               <div className="flex items-center space-x-1.5 text-xs text-emerald-300 font-bold">
                 <Sparkles className="w-4 h-4 text-amber-400" />
@@ -810,12 +826,19 @@ export const WithdrawModal: React.FC<WithdrawModalProps> = ({
                     className={`w-full py-3.5 px-4 rounded-2xl font-black text-sm shadow-xl flex items-center justify-center space-x-2 transition-all cursor-pointer ${
                       isReadyToWithdraw
                         ? 'bg-gradient-to-r from-emerald-500 via-teal-500 to-emerald-600 hover:from-emerald-400 hover:to-teal-400 text-slate-950 shadow-emerald-500/30 transform active:scale-98'
+                        : !isOnline
+                        ? 'bg-amber-950/60 text-amber-300 border border-amber-500/40 cursor-not-allowed'
                         : !isLevelUnlocked
                         ? 'bg-amber-950/60 text-amber-300 border border-amber-500/40 cursor-not-allowed'
                         : 'bg-slate-800 text-slate-400 border border-slate-700 cursor-not-allowed'
                     }`}
                   >
-                    {!isLevelUnlocked ? (
+                    {!isOnline ? (
+                      <>
+                        <WifiOff className="w-4 h-4 text-amber-400 shrink-0" />
+                        <span>Offline: Connect to Internet to Convert Points</span>
+                      </>
+                    ) : !isLevelUnlocked ? (
                       <>
                         <Lock className="w-4 h-4 text-amber-400 shrink-0" />
                         <span>
@@ -980,6 +1003,17 @@ export const WithdrawModal: React.FC<WithdrawModalProps> = ({
           {/* TAB 4: BONUS POINTS GIFT & SCRATCH */}
           {activeTab === 'scratch' && (
             <div className="space-y-3 text-center">
+              {!isOnline && (
+                <div className="p-3 rounded-2xl bg-amber-950/70 border border-amber-500/50 text-amber-200 text-xs flex items-center space-x-2 text-left">
+                  <WifiOff className="w-4 h-4 text-amber-400 shrink-0" />
+                  <div>
+                    <span className="font-bold text-amber-300">Point Increaser Offline:</span>
+                    <span className="text-amber-200/90 ml-1">
+                      Bonus point multipliers and scratch tickets require an online connection to verify reward distribution.
+                    </span>
+                  </div>
+                </div>
+              )}
               <div className="p-4 rounded-2xl bg-gradient-to-b from-amber-950/50 via-slate-900 to-slate-950 border border-amber-500/40 space-y-3">
                 <div className="w-12 h-12 mx-auto rounded-full bg-amber-500/20 border border-amber-500 flex items-center justify-center text-amber-400">
                   <Gift className="w-6 h-6" />
@@ -995,18 +1029,30 @@ export const WithdrawModal: React.FC<WithdrawModalProps> = ({
                 {/* Scratch Surface */}
                 <div
                   onClick={() => {
+                    if (!isOnline) {
+                      sounds.playError();
+                      return;
+                    }
                     if (!isScratched) {
                       sounds.playPowerup();
                       setIsScratched(true);
                     }
                   }}
-                  className={`mx-auto w-full max-w-xs h-32 rounded-2xl border flex flex-col items-center justify-center transition-all cursor-pointer relative overflow-hidden ${
-                    isScratched
-                      ? 'bg-gradient-to-tr from-amber-500/20 via-yellow-500/20 to-emerald-500/20 border-amber-400'
-                      : 'bg-gradient-to-r from-amber-600 via-amber-500 to-yellow-600 border-amber-300 hover:scale-[1.02] shadow-xl'
+                  className={`mx-auto w-full max-w-xs h-32 rounded-2xl border flex flex-col items-center justify-center transition-all relative overflow-hidden ${
+                    !isOnline
+                      ? 'bg-slate-950/60 border-slate-800 text-slate-500 cursor-not-allowed opacity-75'
+                      : isScratched
+                      ? 'bg-gradient-to-tr from-amber-500/20 via-yellow-500/20 to-emerald-500/20 border-amber-400 cursor-pointer'
+                      : 'bg-gradient-to-r from-amber-600 via-amber-500 to-yellow-600 border-amber-300 hover:scale-[1.02] shadow-xl cursor-pointer'
                   }`}
                 >
-                  {!isScratched ? (
+                  {!isOnline ? (
+                    <div className="text-slate-400 font-bold text-xs flex flex-col items-center space-y-1">
+                      <WifiOff className="w-6 h-6 text-amber-400" />
+                      <span>Point Increaser Paused</span>
+                      <span className="text-[10px] text-slate-500">Connect to internet to scratch</span>
+                    </div>
+                  ) : !isScratched ? (
                     <div className="text-slate-950 font-black text-sm flex flex-col items-center space-y-1">
                       <Sparkles className="w-6 h-6 animate-bounce" />
                       <span>✨ TAP TO SCRATCH ✨</span>
@@ -1028,7 +1074,7 @@ export const WithdrawModal: React.FC<WithdrawModalProps> = ({
                   )}
                 </div>
 
-                {isScratched && !scratchClaimed && (
+                {isScratched && !scratchClaimed && isOnline && (
                   <button
                     type="button"
                     onClick={handleClaimScratch}

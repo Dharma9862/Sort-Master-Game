@@ -30,6 +30,7 @@ interface AiSolverModalProps {
   theme: ThemeConfig;
   rewardPoints: number;
   levelNumber?: number;
+  isOnline?: boolean;
   onApplyMove: (fromIdx: number, toIdx: number) => void;
   onDeductPoints?: (amount: number, reason?: string) => boolean;
   onRequestWatchAd?: (title: string, desc: string, onComplete: () => void) => void;
@@ -43,6 +44,7 @@ export const AiSolverModal: React.FC<AiSolverModalProps> = ({
   theme,
   rewardPoints,
   levelNumber = 1,
+  isOnline = true,
   onApplyMove,
   onDeductPoints,
   onRequestWatchAd,
@@ -217,7 +219,9 @@ export const AiSolverModal: React.FC<AiSolverModalProps> = ({
                 {onRequestWatchAd && (
                   <button
                     type="button"
+                    disabled={!isOnline}
                     onClick={() => {
+                      if (!isOnline) return;
                       sounds.playClick();
                       onRequestWatchAd('Free AI Solver Pass', 'Watch a short video to unlock 1 free AI Solver walkthrough!', () => {
                         setIsAdUnlocked(true);
@@ -225,10 +229,14 @@ export const AiSolverModal: React.FC<AiSolverModalProps> = ({
                         runSolver(true);
                       });
                     }}
-                    className="w-full py-3 px-4 rounded-2xl bg-gradient-to-r from-indigo-500 via-purple-500 to-pink-500 hover:from-indigo-400 hover:to-pink-400 text-white font-black text-xs shadow-xl flex items-center justify-center space-x-2 transition-all cursor-pointer transform active:scale-98"
+                    className={`w-full py-3 px-4 rounded-2xl font-black text-xs shadow-xl flex items-center justify-center space-x-2 transition-all ${
+                      isOnline
+                        ? 'bg-gradient-to-r from-indigo-500 via-purple-500 to-pink-500 hover:from-indigo-400 hover:to-pink-400 text-white cursor-pointer transform active:scale-98'
+                        : 'bg-slate-800 border border-slate-700 text-slate-500 cursor-not-allowed opacity-60'
+                    }`}
                   >
-                    <Video className="w-4 h-4 text-white" />
-                    <span>Watch Video for 1 Free AI Solve</span>
+                    <Video className="w-4 h-4" />
+                    <span>{isOnline ? 'Watch Video for 1 Free AI Solve' : 'Video Ads Unavailable Offline'}</span>
                   </button>
                 )}
 

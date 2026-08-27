@@ -29,6 +29,9 @@ import {
   Eye,
   SlidersHorizontal,
   BellRing,
+  Wifi,
+  WifiOff,
+  Radio,
 } from 'lucide-react';
 import { sounds } from '../utils/audio';
 import { GAME_THEMES } from '../data/themes';
@@ -53,11 +56,15 @@ interface SettingsModalProps {
   dailyStreak?: number;
   isDailyClaimable?: boolean;
   unclaimedDailyTasksCount?: number;
+  isOnline?: boolean;
+  isSimulatedOffline?: boolean;
   onToggleSound: () => void;
   onToggleMusic: () => void;
   onToggleHaptics: () => void;
   onToggleColorblind?: () => void;
   onToggleNotifications?: () => void;
+  onToggleSimulatedOffline?: () => void;
+  onOpenNetworkHub?: () => void;
   onChangeSoundVolume?: (vol: number) => void;
   onChangeMusicVolume?: (vol: number) => void;
   onSelectSoundPack?: (pack: 'water' | 'arcade' | 'marimba' | 'synth') => void;
@@ -96,11 +103,15 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
   dailyStreak = 1,
   isDailyClaimable = false,
   unclaimedDailyTasksCount = 0,
+  isOnline = true,
+  isSimulatedOffline = false,
   onToggleSound,
   onToggleMusic,
   onToggleHaptics,
   onToggleColorblind,
   onToggleNotifications,
+  onToggleSimulatedOffline,
+  onOpenNetworkHub,
   onChangeSoundVolume,
   onChangeMusicVolume,
   onSelectSoundPack,
@@ -650,6 +661,68 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
                   </button>
                 </div>
               )}
+
+              {/* Network Status & Offline Mode Toggle */}
+              <div className="p-3.5 rounded-2xl bg-slate-800/80 border border-slate-700/80 space-y-2">
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center space-x-3">
+                    <div className={`p-2 rounded-xl ${isOnline ? 'bg-emerald-500/20 text-emerald-400' : 'bg-amber-500/20 text-amber-400'}`}>
+                      {isOnline ? <Wifi className="w-5 h-5" /> : <WifiOff className="w-5 h-5" />}
+                    </div>
+                    <div>
+                      <div className="flex items-center space-x-2">
+                        <h4 className="text-sm font-bold text-white">Network & Offline Mode</h4>
+                        <span className={`px-1.5 py-0.2 rounded-full text-[9px] font-black uppercase ${
+                          isOnline ? 'bg-emerald-500/20 text-emerald-300 border border-emerald-500/40' : 'bg-amber-500/20 text-amber-300 border border-amber-500/40'
+                        }`}>
+                          {isOnline ? 'ONLINE' : 'OFFLINE'}
+                        </span>
+                      </div>
+                      <p className="text-xs text-slate-400">
+                        {isOnline ? 'All game features, bank conversions & boosters active' : 'Gameplay works offline; online features paused'}
+                      </p>
+                    </div>
+                  </div>
+
+                  {onToggleSimulatedOffline && (
+                    <button
+                      type="button"
+                      onClick={() => {
+                        sounds.playClick();
+                        onToggleSimulatedOffline();
+                      }}
+                      className={`w-12 h-7 rounded-full p-1 transition-colors duration-200 ease-in-out cursor-pointer ${
+                        !isSimulatedOffline ? 'bg-emerald-500' : 'bg-amber-600'
+                      }`}
+                      title={isSimulatedOffline ? 'Simulated Offline Mode Active' : 'Online'}
+                    >
+                      <div
+                        className={`w-5 h-5 rounded-full bg-white transition-transform duration-200 ease-in-out shadow ${
+                          !isSimulatedOffline ? 'translate-x-5' : 'translate-x-0'
+                        }`}
+                      />
+                    </button>
+                  )}
+                </div>
+
+                {onOpenNetworkHub && (
+                  <button
+                    type="button"
+                    onClick={() => {
+                      sounds.playClick();
+                      onClose();
+                      onOpenNetworkHub();
+                    }}
+                    className="w-full py-2 px-3 rounded-xl bg-slate-900/90 hover:bg-slate-700/80 text-slate-300 font-bold text-[11px] border border-slate-700 flex items-center justify-between transition-colors cursor-pointer"
+                  >
+                    <span className="flex items-center space-x-1.5">
+                      <Radio className="w-3.5 h-3.5 text-cyan-400" />
+                      <span>Open Network Hub & Offline Feature Details</span>
+                    </span>
+                    <ArrowRight className="w-3.5 h-3.5 text-slate-400" />
+                  </button>
+                )}
+              </div>
 
               {/* Sound SFX & Volume */}
               <div className="p-3.5 rounded-2xl bg-slate-800/80 border border-slate-700/80 space-y-3">

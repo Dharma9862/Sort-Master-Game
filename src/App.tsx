@@ -26,6 +26,9 @@ import {
   Sliders,
   Bell,
   BellRing,
+  Wifi,
+  WifiOff,
+  Radio,
 } from 'lucide-react';
 
 import { ContainerData, LevelConfig, PlayerProfile, ItemThemeId, MoveSnapshot, WithdrawalRecord, WalletLedgerEntry, AppNotification } from './types/game';
@@ -35,6 +38,7 @@ import { findBestMove, isStateSolved } from './utils/solver';
 import { sounds } from './utils/audio';
 import { loadProfile, saveProfile, getTodayDateString, triggerHaptic } from './utils/storage';
 import { triggerBrowserNotification } from './utils/notifications';
+import { useNetworkStatus } from './hooks/useNetworkStatus';
 
 // Modals
 import { ContainerTube } from './components/ContainerTube';
@@ -53,6 +57,7 @@ import { AiSolverModal } from './components/AiSolverModal';
 import { StatsModal } from './components/StatsModal';
 import { CustomLevelModal } from './components/CustomLevelModal';
 import { NotificationModal } from './components/NotificationModal';
+import { NetworkHubModal } from './components/NetworkHubModal';
 
 // Calculate scaled Withdrawable Cash Points per level (100,000 Points = ₹10.00 INR)
 export function getLevelPointsReward(levelNum: number): number {
@@ -68,6 +73,10 @@ export function getLevelPointsReward(levelNum: number): number {
 }
 
 export default function App() {
+  // Network Connectivity State
+  const { isOnline, isSimulatedOffline, toggleSimulatedOffline } = useNetworkStatus();
+  const [isNetworkHubOpen, setIsNetworkHubOpen] = useState<boolean>(false);
+
   // Player Profile
   const [profile, setProfile] = useState<PlayerProfile>(loadProfile);
 
@@ -903,8 +912,36 @@ export default function App() {
               </button>
             </div>
 
-            {/* Right Control: Settings Only */}
-            <div className="flex items-center">
+            {/* Right Controls: Network Hub & Settings */}
+            <div className="flex items-center space-x-1.5">
+              {/* Network Status / Mode Toggle Hub */}
+              <button
+                type="button"
+                onClick={() => {
+                  sounds.playClick();
+                  setIsNetworkHubOpen(true);
+                }}
+                className={`h-8 px-2 rounded-xl backdrop-blur-md border shadow-md flex items-center space-x-1 transition-all cursor-pointer ${
+                  isOnline
+                    ? 'bg-slate-900/90 border-emerald-500/40 hover:border-emerald-400 text-emerald-400'
+                    : 'bg-amber-950/80 border-amber-500/60 hover:border-amber-400 text-amber-300 animate-pulse'
+                }`}
+                title={isOnline ? 'Network Online (Click for Network Hub)' : 'Offline Mode Active (Click to inspect)'}
+              >
+                {isOnline ? (
+                  <>
+                    <Wifi className="w-3.5 h-3.5 text-emerald-400" />
+                    <span className="text-[10px] font-bold text-emerald-300 hidden sm:inline">Online</span>
+                  </>
+                ) : (
+                  <>
+                    <WifiOff className="w-3.5 h-3.5 text-amber-400" />
+                    <span className="text-[10px] font-black text-amber-300">Offline</span>
+                  </>
+                )}
+              </button>
+
+              {/* Settings Button */}
               <button
                 type="button"
                 onClick={() => {
@@ -921,6 +958,29 @@ export default function App() {
               </button>
             </div>
           </div>
+
+          {/* Offline Banner when disconnected */}
+          {!isOnline && (
+            <motion.div
+              initial={{ opacity: 0, y: -6 }}
+              animate={{ opacity: 1, y: 0 }}
+              onClick={() => {
+                sounds.playClick();
+                setIsNetworkHubOpen(true);
+              }}
+              className="mx-1 px-3 py-1.5 rounded-2xl bg-amber-950/80 border border-amber-500/50 text-amber-200 text-[11px] font-medium flex items-center justify-between shadow-lg cursor-pointer hover:bg-amber-900/80 transition-colors"
+            >
+              <div className="flex items-center space-x-2">
+                <WifiOff className="w-3.5 h-3.5 text-amber-400 shrink-0" />
+                <span>
+                  <strong className="text-amber-300">Offline Mode:</strong> Puzzles active • Point converter & bank payouts paused
+                </span>
+              </div>
+              <span className="text-[10px] font-black text-amber-300 underline shrink-0 ml-1">
+                Details →
+              </span>
+            </motion.div>
+          )}
 
           {/* Floating Interactive Toast Notification Banner */}
           <AnimatePresence>
@@ -1271,6 +1331,7 @@ export default function App() {
         isMultiStage={(levelConfig.stagesCount ?? 1) > 1}
         currentStage={currentStageIndex + 1}
         totalStages={levelConfig.stagesCount ?? 1}
+        isOnline={isOnline}
         onNextLevel={() => {
           if (levelConfig.stagesCount && currentStageIndex < levelConfig.stagesCount - 1) {
             // Next stage in multi-stage level
@@ -1490,6 +1551,7 @@ export default function App() {
       <WithdrawModal
         isOpen={isWithdrawOpen}
         profile={profile}
+        isOnline={isOnline}
         onWithdrawSuccess={(record) => {
           updateProfile((p) => ({
             ...p,
@@ -1534,6 +1596,8 @@ export default function App() {
         unlockedThemes={profile.unlockedThemes}
         dailyStreak={profile.dailyStreak || 1}
         isDailyClaimable={profile.lastDailyClaimDate !== getTodayDateString()}
+        isOnline={isOnline}
+        isSimulatedOffline={isSimulatedOffline}
         onToggleSound={() => updateProfile((p) => ({ ...p, soundEnabled: !p.soundEnabled }))}
         onToggleMusic={() => updateProfile((p) => ({ ...p, musicEnabled: !p.musicEnabled }))}
         onToggleHaptics={() => updateProfile((p) => ({ ...p, hapticsEnabled: !p.hapticsEnabled }))}
@@ -1541,6 +1605,8 @@ export default function App() {
         onToggleNotifications={() =>
           updateProfile((p) => ({ ...p, notificationsEnabled: !p.notificationsEnabled }))
         }
+        onToggleSimulatedOffline={toggleSimulatedOffline}
+        onOpenNetworkHub={() => setIsNetworkHubOpen(true)}
         onChangeSoundVolume={(vol) => updateProfile((p) => ({ ...p, soundVolume: vol }))}
         onChangeMusicVolume={(vol) => updateProfile((p) => ({ ...p, musicVolume: vol }))}
         onSelectSoundPack={(pack) => updateProfile((p) => ({ ...p, soundPack: pack }))}
@@ -1576,6 +1642,7 @@ export default function App() {
       <WalletModal
         isOpen={isWalletOpen}
         profile={profile}
+        isOnline={isOnline}
         onClose={() => setIsWalletOpen(false)}
         onOpenWithdraw={() => {
           setIsWalletOpen(false);
@@ -1610,6 +1677,7 @@ export default function App() {
         theme={activeTheme}
         rewardPoints={profile.rewardPoints || 0}
         levelNumber={currentLevelNum}
+        isOnline={isOnline}
         onApplyMove={handleExecuteSolverMove}
         onDeductPoints={handleDeductPointsForSolver}
         onRequestWatchAd={(title, desc, onComplete) => triggerRewardedAd(title, desc, onComplete)}
@@ -1658,6 +1726,15 @@ export default function App() {
         }
         onNavigateAction={handleNavigateNotificationAction}
         onClose={() => setIsNotificationOpen(false)}
+      />
+
+      {/* 16. Network Hub & Offline Feature Status Modal */}
+      <NetworkHubModal
+        isOpen={isNetworkHubOpen}
+        isOnline={isOnline}
+        isSimulatedOffline={isSimulatedOffline}
+        onToggleSimulatedOffline={toggleSimulatedOffline}
+        onClose={() => setIsNetworkHubOpen(false)}
       />
     </div>
   );

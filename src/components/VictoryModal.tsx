@@ -1,6 +1,6 @@
 import React, { useEffect } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
-import { Star, Play, RotateCcw, Sparkles, Award, Video, Wallet } from 'lucide-react';
+import { Star, Play, RotateCcw, Sparkles, Award, Video, Wallet, WifiOff } from 'lucide-react';
 import confetti from 'canvas-confetti';
 import { sounds } from '../utils/audio';
 
@@ -18,6 +18,7 @@ interface VictoryModalProps {
   isMultiStage?: boolean;
   currentStage?: number;
   totalStages?: number;
+  isOnline?: boolean;
   onNextLevel: () => void;
   onReplayLevel: () => void;
   onWatchAdDoubleCoins: () => void;
@@ -39,6 +40,7 @@ export const VictoryModal: React.FC<VictoryModalProps> = ({
   isMultiStage,
   currentStage = 1,
   totalStages = 1,
+  isOnline = true,
   onNextLevel,
   onReplayLevel,
   onWatchAdDoubleCoins,
@@ -202,14 +204,21 @@ export const VictoryModal: React.FC<VictoryModalProps> = ({
 
           {/* Double Coins & Points Rewarded Ad Prompt */}
           {!isStageIntermediate && (
-            <button
-              type="button"
-              onClick={onWatchAdDoubleCoins}
-              className="w-full py-2.5 px-4 mb-3 rounded-2xl bg-gradient-to-r from-amber-500/20 to-orange-500/20 border border-amber-500/50 hover:bg-amber-500/30 text-amber-300 text-xs font-bold flex items-center justify-center space-x-2 transition-all cursor-pointer shadow"
-            >
-              <Video className="w-4 h-4 text-amber-400" />
-              <span>Watch Ad for 2× Rewards (+{baseCoins} 🪙 & +{pointsEarned} ⭐)</span>
-            </button>
+            isOnline ? (
+              <button
+                type="button"
+                onClick={onWatchAdDoubleCoins}
+                className="w-full py-2.5 px-4 mb-3 rounded-2xl bg-gradient-to-r from-amber-500/20 to-orange-500/20 border border-amber-500/50 hover:bg-amber-500/30 text-amber-300 text-xs font-bold flex items-center justify-center space-x-2 transition-all cursor-pointer shadow"
+              >
+                <Video className="w-4 h-4 text-amber-400" />
+                <span>Watch Ad for 2× Rewards (+{baseCoins} 🪙 & +{pointsEarned} ⭐)</span>
+              </button>
+            ) : (
+              <div className="w-full py-2 px-3 mb-3 rounded-2xl bg-slate-950/60 border border-slate-800 text-slate-400 text-[11px] font-medium flex items-center justify-center space-x-2">
+                <WifiOff className="w-3.5 h-3.5 text-amber-400" />
+                <span>2× Point Increaser paused (Offline Mode)</span>
+              </div>
+            )
           )}
 
           {/* Action Buttons */}
