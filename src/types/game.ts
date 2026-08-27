@@ -141,6 +141,15 @@ export interface DailyTasksState {
   bonusClaimed: boolean;
 }
 
+export interface ReferralRecord {
+  id: string;
+  friendName: string;
+  code: string;
+  date: number;
+  pointsAwarded: number;
+  status: 'completed' | 'pending';
+}
+
 export interface PlayerProfile {
   coins: number;
   rewardPoints: number; // Cash points convertible to bank balance (e.g., 1,000 pts = $1.00)
@@ -179,6 +188,10 @@ export interface PlayerProfile {
   notificationsEnabled?: boolean;
   browserPushEnabled?: boolean;
   notifications?: AppNotification[];
+  referralCode?: string;
+  referredByCode?: string;
+  referralCount?: number;
+  referralsList?: ReferralRecord[];
   stats: {
     totalMoves: number;
     levelsCompleted: number;
@@ -211,6 +224,6 @@ export interface AppNotification {
   type: NotificationType;
   timestamp: number;
   read: boolean;
-  actionType?: 'daily' | 'withdraw' | 'themes' | 'lives' | 'solver' | 'coins';
+  actionType?: 'daily' | 'withdraw' | 'themes' | 'lives' | 'solver' | 'coins' | 'referral';
   actionData?: any;
 }
