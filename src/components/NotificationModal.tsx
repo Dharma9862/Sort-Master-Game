@@ -41,7 +41,7 @@ interface ScheduledItem {
   title: string;
   message: string;
   type: NotificationType;
-  actionType?: 'daily' | 'withdraw' | 'themes' | 'lives' | 'solver' | 'coins';
+  actionType?: 'daily' | 'withdraw' | 'themes' | 'lives' | 'solver' | 'coins' | 'referral';
   actionData?: any;
   sendWebPush: boolean;
   scheduledTime: number; // target timestamp
@@ -131,7 +131,7 @@ export const NotificationModal: React.FC<NotificationModalProps> = ({
     title: string,
     message: string,
     type: NotificationType,
-    actionType?: 'daily' | 'withdraw' | 'themes' | 'lives' | 'solver' | 'coins',
+    actionType?: AppNotification['actionType'],
     sendPush: boolean = true
   ) => {
     const newNotif = createNotification({
@@ -470,6 +470,7 @@ export const NotificationModal: React.FC<NotificationModalProps> = ({
                         onChange={(e) => setCustomAction(e.target.value)}
                         className="w-full py-1.5 px-2 text-xs bg-slate-900 border border-slate-700 rounded-xl text-slate-200 focus:outline-none focus:border-indigo-500"
                       >
+                        <option value="referral">👥 Refer & Earn (+100 Pts)</option>
                         <option value="coins">⭐ Add +250 Coins</option>
                         <option value="lives">⚡ Refill Lives</option>
                         <option value="daily">📅 Daily Streak</option>
@@ -681,6 +682,8 @@ export const NotificationModal: React.FC<NotificationModalProps> = ({
                               <span>
                                 {notif.actionType === 'daily'
                                   ? 'Claim Daily Reward 🎁'
+                                  : notif.actionType === 'referral'
+                                  ? 'Open Refer & Earn (+100 Pts) 👥'
                                   : notif.actionType === 'lives'
                                   ? 'Use Energy Refill ⚡'
                                   : notif.actionType === 'withdraw'

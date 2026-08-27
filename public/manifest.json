@@ -1,0 +1,49 @@
+{
+  "name": "Sort Master — Mobile Puzzle Game",
+  "short_name": "Sort Master",
+  "description": "Casual, addictive sorting puzzle game with 200 progressive levels, 10 vibrant themes, withdrawable points system, and AI hint solver.",
+  "start_url": "/",
+  "id": "/",
+  "display": "standalone",
+  "orientation": "portrait-primary",
+  "background_color": "#030712",
+  "theme_color": "#030712",
+  "categories": ["games", "puzzle", "casual"],
+  "icons": [
+    {
+      "src": "/icon-192.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "any maskable"
+    },
+    {
+      "src": "/icon-512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any maskable"
+    }
+  ],
+  "shortcuts": [
+    {
+      "name": "Play Level",
+      "short_name": "Play",
+      "description": "Jump straight into sorting bottles",
+      "url": "/?action=play",
+      "icons": [{ "src": "/icon-192.png", "sizes": "192x192" }]
+    },
+    {
+      "name": "Daily Rewards",
+      "short_name": "Daily",
+      "description": "Claim your daily login reward",
+      "url": "/?action=daily",
+      "icons": [{ "src": "/icon-192.png", "sizes": "192x192" }]
+    },
+    {
+      "name": "Refer & Earn",
+      "short_name": "Refer",
+      "description": "Invite friends for +100 Points bonus",
+      "url": "/?action=referral",
+      "icons": [{ "src": "/icon-192.png", "sizes": "192x192" }]
+    }
+  ]
+}

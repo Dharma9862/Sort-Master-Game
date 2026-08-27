@@ -1,6 +1,6 @@
 {
   "name": "Sort Master - Mobile Puzzle Game",
-  "description": "Casual, addictive sorting puzzle game with 200 progressive levels, 10 vibrant themes, withdrawable points to bank balance system, lives, hint solver, undo, power-ups, daily rewards, achievements, and AdMob monetization system ready for APK publishing.",
+  "description": "Casual, addictive sorting puzzle game with 200 progressive levels, 10 vibrant themes, withdrawable points system, notification studio, referral bonus system, and end-to-end Web to Mobile APK/AAB packaging and Google Play Store publishing suite.",
   "requestFramePermissions": [],
   "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
 }

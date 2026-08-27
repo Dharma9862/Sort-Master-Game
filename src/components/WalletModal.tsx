@@ -34,6 +34,7 @@ interface WalletModalProps {
   profile: PlayerProfile;
   onClose: () => void;
   onOpenWithdraw: () => void;
+  onOpenReferral?: () => void;
   onConvertPointsToCash: (points: number, cashAmount: number, currency: string) => void;
   onCurrencyChange: (currency: string) => void;
   onClaimDaily?: () => void;
@@ -61,6 +62,7 @@ export const WalletModal: React.FC<WalletModalProps> = ({
   profile,
   onClose,
   onOpenWithdraw,
+  onOpenReferral,
   onConvertPointsToCash,
   onCurrencyChange,
 }) => {
@@ -397,6 +399,39 @@ export const WalletModal: React.FC<WalletModalProps> = ({
                     <ArrowUpRight className="w-3.5 h-3.5 text-slate-400" />
                   </button>
                 </div>
+
+                {/* Refer & Earn Bonus Booster Banner */}
+                {onOpenReferral && (
+                  <div
+                    onClick={() => {
+                      sounds.playClick();
+                      onOpenReferral();
+                    }}
+                    className="p-3.5 rounded-2xl bg-gradient-to-r from-purple-950/70 via-slate-900 to-indigo-950/70 border border-purple-500/40 hover:border-purple-400 transition-all cursor-pointer flex items-center justify-between shadow-lg group"
+                  >
+                    <div className="flex items-center space-x-3">
+                      <div className="p-2 rounded-xl bg-purple-500/20 text-purple-300 border border-purple-400/30 group-hover:scale-105 transition-transform">
+                        <Gift className="w-5 h-5 text-pink-400 animate-pulse" />
+                      </div>
+                      <div>
+                        <div className="text-xs font-black text-white flex items-center space-x-1.5">
+                          <span>Refer Friends & Earn Cash Points</span>
+                          <span className="text-[9px] font-black bg-amber-500/20 text-amber-300 px-1.5 py-0.5 rounded border border-amber-500/30">
+                            +100 PTS
+                          </span>
+                        </div>
+                        <p className="text-[10px] text-purple-200">
+                          Get 100 Points per friend who joins with your code
+                        </p>
+                      </div>
+                    </div>
+
+                    <div className="flex items-center space-x-1 text-purple-400 text-xs font-bold group-hover:translate-x-1 transition-transform">
+                      <span>Invite</span>
+                      <ChevronRight className="w-4 h-4" />
+                    </div>
+                  </div>
+                )}
 
                 {/* Level Conversion Milestone Rules Card */}
                 <div className="p-3.5 rounded-2xl bg-slate-950/80 border border-slate-800 space-y-2">

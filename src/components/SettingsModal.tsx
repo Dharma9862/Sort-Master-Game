@@ -71,6 +71,8 @@ interface SettingsModalProps {
   onOpenStats?: () => void;
   onOpenCustomStudio?: () => void;
   onOpenNotifications?: () => void;
+  onOpenReferral?: () => void;
+  onOpenPlayStorePublish?: () => void;
   onSelectTheme?: (themeId: ItemThemeId) => void;
   onClose: () => void;
 }
@@ -112,6 +114,8 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
   onOpenStats,
   onOpenCustomStudio,
   onOpenNotifications,
+  onOpenReferral,
+  onOpenPlayStorePublish,
   onSelectTheme,
   onClose,
 }) => {
@@ -560,6 +564,28 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
                       </div>
                     </button>
                   )}
+
+                  {onOpenReferral && (
+                    <button
+                      type="button"
+                      onClick={() => {
+                        sounds.playClick();
+                        onOpenReferral();
+                      }}
+                      className="p-2.5 rounded-xl bg-gradient-to-br from-purple-900/60 to-slate-800 hover:from-purple-800/60 text-left border border-purple-500/40 flex flex-col justify-between cursor-pointer group"
+                    >
+                      <Gift className="w-5 h-5 text-pink-400 group-hover:scale-110 transition-transform" />
+                      <div className="mt-2">
+                        <div className="text-[11px] font-black text-white flex items-center space-x-1">
+                          <span>Referral</span>
+                          <span className="text-[8px] bg-amber-400 text-slate-950 font-black px-1 rounded">
+                            +100
+                          </span>
+                        </div>
+                        <div className="text-[9px] text-purple-300">Invite & Earn</div>
+                      </div>
+                    </button>
+                  )}
                 </div>
               </div>
 
@@ -910,6 +936,21 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
                   with your official AdMob App ID and Ad Unit IDs (`ca-app-pub-XXXX`).
                 </p>
               </div>
+
+              {onOpenPlayStorePublish && (
+                <button
+                  type="button"
+                  onClick={() => {
+                    sounds.playClick();
+                    onClose();
+                    onOpenPlayStorePublish();
+                  }}
+                  className="w-full py-3 px-4 rounded-2xl bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-500 hover:to-teal-500 text-white font-black text-xs shadow-lg flex items-center justify-center space-x-2 cursor-pointer transition-all active:scale-98"
+                >
+                  <Smartphone className="w-4 h-4" />
+                  <span>Open Full Play Store & APK Publishing Studio</span>
+                </button>
+              )}
             </div>
           )}
         </motion.div>

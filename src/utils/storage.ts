@@ -52,6 +52,27 @@ export const DEFAULT_PROFILE: PlayerProfile = {
   totalPlaytimeSeconds: 0,
   notificationsEnabled: true,
   browserPushEnabled: false,
+  referralCode: 'SORT-8492X',
+  referredByCode: undefined,
+  referralCount: 2,
+  referralsList: [
+    {
+      id: 'ref_sample_1',
+      friendName: 'Alex K. (Mobile)',
+      code: 'SORT-8492X',
+      date: Date.now() - 86400000 * 2,
+      pointsAwarded: 100,
+      status: 'completed',
+    },
+    {
+      id: 'ref_sample_2',
+      friendName: 'Priya S. (UPI User)',
+      code: 'SORT-8492X',
+      date: Date.now() - 86400000,
+      pointsAwarded: 100,
+      status: 'completed',
+    },
+  ],
   notifications: [
     {
       id: 'notif_welcome',
@@ -154,6 +175,12 @@ export function loadProfile(): PlayerProfile {
     }
     if (!merged.preferredCurrency) {
       merged.preferredCurrency = 'INR';
+    }
+    if (!merged.referralCode) {
+      merged.referralCode = `SORT-${Math.floor(1000 + Math.random() * 9000)}X`;
+    }
+    if (!merged.referralsList) {
+      merged.referralsList = [];
     }
 
     return merged;

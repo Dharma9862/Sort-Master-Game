@@ -5,7 +5,7 @@ export interface SendNotificationOptions {
   title: string;
   message: string;
   type: NotificationType;
-  actionType?: 'daily' | 'withdraw' | 'themes' | 'lives' | 'solver' | 'coins';
+  actionType?: 'daily' | 'withdraw' | 'themes' | 'lives' | 'solver' | 'coins' | 'referral';
   actionData?: any;
   sendWebPush?: boolean;
   delayMs?: number;
@@ -16,12 +16,21 @@ export interface NotificationPreset {
   title: string;
   message: string;
   type: NotificationType;
-  actionType?: 'daily' | 'withdraw' | 'themes' | 'lives' | 'solver' | 'coins';
+  actionType?: 'daily' | 'withdraw' | 'themes' | 'lives' | 'solver' | 'coins' | 'referral';
   badgeLabel: string;
   iconColor: string;
 }
 
 export const NOTIFICATION_PRESETS: NotificationPreset[] = [
+  {
+    id: 'preset_referral',
+    title: '👥 Referral Bonus Credited (+100 Points)!',
+    message: 'A friend joined using your referral code. +100 Cash Points added to your wallet!',
+    type: 'reward',
+    actionType: 'referral',
+    badgeLabel: 'Referral Bonus',
+    iconColor: 'from-purple-500 to-pink-500',
+  },
   {
     id: 'preset_energy',
     title: '⚡ Energy Fully Restored!',
