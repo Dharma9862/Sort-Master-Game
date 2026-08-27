@@ -51,8 +51,8 @@ export const INITIAL_ACHIEVEMENTS: AchievementItem[] = [
   },
   {
     id: 'level_100',
-    title: 'Centurion (+Tube Badge)',
-    description: 'Conquer 100 levels to earn the Centurion Badge and unlock the +1 Extra Tube booster!',
+    title: 'Centurion (Milestone 100)',
+    description: 'Reach and conquer Level 100 with 5 exclusive +1 Tube booster uses!',
     icon: '🧪',
     target: 100,
     rewardCoins: 2000,
@@ -63,8 +63,8 @@ export const INITIAL_ACHIEVEMENTS: AchievementItem[] = [
   },
   {
     id: 'level_200',
-    title: 'Grand Sort Master',
-    description: 'Beat the Ultimate Challenge (Level 200)!',
+    title: 'Grand Sort Master (Level 200)',
+    description: 'Beat the Ultimate Challenge Level 200 with 5 exclusive +1 Tube booster uses!',
     icon: '👑',
     target: 200,
     rewardCoins: 5000,

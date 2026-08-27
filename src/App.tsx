@@ -114,7 +114,7 @@ export default function App() {
 
   // Hint State
   const [hintMove, setHintMove] = useState<{ fromId: string; toId: string } | null>(null);
-  const [isExtraBottleAdded, setIsExtraBottleAdded] = useState<boolean>(false);
+  const [levelTubesAdded, setLevelTubesAdded] = useState<number>(0);
   const [tubeLockMessage, setTubeLockMessage] = useState<string | null>(null);
 
   // Multi-stage state
@@ -232,7 +232,7 @@ export default function App() {
     setIsVictoryOpen(false);
     setIsGameOverOpen(false);
     setHintMove(null);
-    setIsExtraBottleAdded(false);
+    setLevelTubesAdded(0);
   }, []);
 
   // Initialize level on mount
@@ -466,6 +466,40 @@ export default function App() {
     }, 50);
   };
 
+  // Deduct reward points for AI solver use (250 points per solve)
+  const handleDeductPointsForSolver = (amount: number, reason: string = 'AI Solver'): boolean => {
+    if ((profile.rewardPoints || 0) < amount) {
+      return false;
+    }
+
+    sounds.playCoin();
+    updateProfile((p) => {
+      const newPoints = Math.max(0, (p.rewardPoints || 0) - amount);
+      const txEntry: WalletLedgerEntry = {
+        id: `solv_${Date.now()}_${Math.random().toString(36).substring(2, 6)}`,
+        timestamp: Date.now(),
+        type: 'ai_solver',
+        title: 'AI Solver Assistance',
+        description: `${reason} (-${amount} pts)`,
+        amountChange: 0,
+        pointsChange: -amount,
+        currency: p.preferredCurrency || 'INR',
+        referenceId: `SOLV-${Math.floor(100000 + Math.random() * 900000)}`,
+        status: 'completed',
+      };
+
+      return {
+        ...p,
+        rewardPoints: newPoints,
+        walletTransactions: [txEntry, ...(p.walletTransactions || [])],
+      };
+    });
+
+    setComboToast(`⭐ -${amount} Points (AI Solver)`);
+    setTimeout(() => setComboToast(null), 3000);
+    return true;
+  };
+
   // Play custom level from Sandbox Studio
   const handlePlayCustomLevel = (config: LevelConfig) => {
     setLevelConfig(config);
@@ -479,7 +513,7 @@ export default function App() {
     setIsVictoryOpen(false);
     setIsGameOverOpen(false);
     setHintMove(null);
-    setIsExtraBottleAdded(false);
+    setLevelTubesAdded(0);
   };
 
   // --- NOTIFICATION SYSTEM HANDLERS ---
@@ -686,34 +720,42 @@ export default function App() {
     }
   };
 
-  // 4. +1 Extra Bottle (+Tube Booster)
+  // 4. +1 Extra Bottle (+Tube Booster) - Exclusive: only 5 times at Level 100 and 5 times at Level 200
   const handleAddExtraBottle = () => {
-    // Level 100 Badge milestone check
-    if ((profile.unlockedLevel || 1) < 100) {
+    const isBossLevel = currentLevelNum === 100 || currentLevelNum === 200;
+
+    if (!isBossLevel) {
       sounds.playError();
       setTubeLockMessage(
-        `🔒 +Tube Booster is locked! Earn the Centurion Badge at Level 100 to unlock extra tubes (You are Level ${profile.unlockedLevel || 1}/100).`
+        `🔒 +Tube Booster is exclusive to Milestone Levels 100 & 200 (5 uses each)! You are on Level ${currentLevelNum}.`
       );
       setTimeout(() => setTubeLockMessage(null), 4000);
       return;
     }
 
-    if (isExtraBottleAdded || containers.length >= 8) {
+    if (levelTubesAdded >= 5) {
       sounds.playError();
+      setTubeLockMessage(
+        `⚠️ Limit Reached: You have already added all 5 extra tubes allowed for Level ${currentLevelNum}!`
+      );
+      setTimeout(() => setTubeLockMessage(null), 4000);
       return;
     }
 
     const doAddBottle = () => {
       sounds.playPowerup();
       const newBottle: ContainerData = {
-        id: `extra_bottle_${Date.now()}`,
+        id: `extra_bottle_${Date.now()}_${levelTubesAdded + 1}`,
         items: [],
         capacity: levelConfig.capacity,
         isExtraBottle: true,
       };
       setContainers((prev) => [...prev, newBottle]);
-      setIsExtraBottleAdded(true);
+      setLevelTubesAdded((prev) => prev + 1);
       setHintMove(null);
+
+      setComboToast(`🧪 +1 Extra Tube added (${levelTubesAdded + 1}/5 for Level ${currentLevelNum})`);
+      setTimeout(() => setComboToast(null), 2500);
     };
 
     if (profile.extraBottleCount > 0) {
@@ -724,10 +766,14 @@ export default function App() {
       updateProfile((p) => ({ ...p, coins: p.coins - 100 }));
       doAddBottle();
     } else {
-      triggerRewardedAd('Extra Empty Bottle', 'Watch a video to add a lifesaving buffer bottle!', () => {
-        updateProfile((p) => ({ ...p, extraBottleCount: p.extraBottleCount + 1 }));
-        setTimeout(doAddBottle, 300);
-      });
+      triggerRewardedAd(
+        `Extra Empty Tube (${levelTubesAdded + 1}/5)`,
+        `Watch a short video to add tube #${levelTubesAdded + 1} for Level ${currentLevelNum}!`,
+        () => {
+          updateProfile((p) => ({ ...p, extraBottleCount: p.extraBottleCount + 1 }));
+          setTimeout(doAddBottle, 300);
+        }
+      );
     }
   };
 
@@ -853,10 +899,11 @@ export default function App() {
                   sounds.playClick();
                   setIsAiSolverOpen(true);
                 }}
-                className="p-1.5 rounded-2xl bg-slate-900/80 backdrop-blur-md border border-indigo-500/40 hover:border-indigo-400 text-indigo-300 hover:text-white transition-colors cursor-pointer shadow-lg"
-                title="AI Solver Walkthrough"
+                className="px-2 py-1.5 rounded-2xl bg-slate-900/80 backdrop-blur-md border border-indigo-500/40 hover:border-indigo-400 text-indigo-300 hover:text-white transition-colors cursor-pointer shadow-lg flex items-center space-x-1"
+                title="AI Solver Walkthrough (250 ⭐ Points per solve)"
               >
                 <Bot className="w-4 h-4" />
+                <span className="text-[9px] font-mono font-bold text-amber-300 hidden sm:inline">-250⭐</span>
               </button>
 
               {/* Quick Colorblind Mode toggle */}
@@ -1042,7 +1089,11 @@ export default function App() {
                 ? 'grid-cols-3 sm:grid-cols-4 max-w-sm'
                 : containers.length <= 6
                 ? 'grid-cols-3 max-w-sm'
-                : 'grid-cols-4 max-w-md'
+                : containers.length <= 8
+                ? 'grid-cols-4 max-w-md'
+                : containers.length <= 10
+                ? 'grid-cols-4 sm:grid-cols-5 max-w-lg'
+                : 'grid-cols-4 sm:grid-cols-6 max-w-xl'
             }`}
           >
             {containers.map((container, idx) => {
@@ -1133,40 +1184,52 @@ export default function App() {
               </span>
             </button>
 
-            {/* +1 Bottle (+Tube Booster) */}
+            {/* +1 Bottle (+Tube Booster) - Exclusive 5 uses on Level 100 and 5 uses on Level 200 */}
             <button
               type="button"
-              disabled={isExtraBottleAdded || containers.length >= 8}
+              disabled={(currentLevelNum === 100 || currentLevelNum === 200) && levelTubesAdded >= 5}
               onClick={handleAddExtraBottle}
               className={`p-2.5 rounded-2xl flex flex-col items-center justify-center border transition-all cursor-pointer relative ${
-                (profile.unlockedLevel || 1) < 100
-                  ? 'bg-slate-950/60 border-amber-500/40 hover:border-amber-400 text-amber-200 shadow-md'
-                  : !isExtraBottleAdded && containers.length < 8
-                  ? 'bg-slate-900/80 border-slate-700 hover:border-emerald-400 active:scale-95 shadow-md text-white'
-                  : 'bg-slate-950/40 border-slate-800 text-slate-600 cursor-not-allowed'
+                (currentLevelNum === 100 || currentLevelNum === 200) && levelTubesAdded < 5
+                  ? 'bg-gradient-to-b from-slate-900/90 to-emerald-950/40 border-emerald-500/60 hover:border-emerald-400 active:scale-95 shadow-lg shadow-emerald-950/40 text-white'
+                  : (currentLevelNum === 100 || currentLevelNum === 200) && levelTubesAdded >= 5
+                  ? 'bg-slate-950/40 border-slate-800 text-slate-600 cursor-not-allowed'
+                  : 'bg-slate-950/60 border-amber-500/30 hover:border-amber-400 text-slate-400'
               }`}
             >
-              {/* Badge for Level 100 requirement / unlocked status */}
-              {(profile.unlockedLevel || 1) < 100 ? (
-                <span className="absolute -top-1.5 -right-1 px-1.5 py-0.2 rounded-full bg-amber-500 text-slate-950 font-black text-[7.5px] border border-amber-300 shadow">
-                  🔒 LVL 100
+              {/* Badge for Level 100 & 200 exclusivity & count remaining */}
+              {currentLevelNum === 100 || currentLevelNum === 200 ? (
+                <span
+                  className={`absolute -top-1.5 -right-1 px-1.5 py-0.2 rounded-full font-black text-[7.5px] border shadow ${
+                    levelTubesAdded >= 5
+                      ? 'bg-slate-800 text-slate-400 border-slate-700'
+                      : 'bg-emerald-500 text-slate-950 border-emerald-300 animate-pulse'
+                  }`}
+                >
+                  {levelTubesAdded >= 5 ? '5/5 USED' : `${5 - levelTubesAdded}/5 LEFT`}
                 </span>
               ) : (
-                <span className="absolute -top-1.5 -right-1 px-1.5 py-0.2 rounded-full bg-emerald-500 text-slate-950 font-black text-[7.5px] border border-emerald-300 shadow">
-                  ✨ UNLOCKED
+                <span className="absolute -top-1.5 -right-1 px-1.5 py-0.2 rounded-full bg-amber-500/30 text-amber-300 font-black text-[7px] border border-amber-500/40 shadow">
+                  🔒 LVL 100 & 200
                 </span>
               )}
 
-              <PlusCircle className={`w-5 h-5 mb-0.5 ${
-                (profile.unlockedLevel || 1) < 100 ? 'text-amber-400' : 'text-emerald-400'
-              }`} />
+              <PlusCircle
+                className={`w-5 h-5 mb-0.5 ${
+                  (currentLevelNum === 100 || currentLevelNum === 200) && levelTubesAdded < 5
+                    ? 'text-emerald-400'
+                    : currentLevelNum === 100 || currentLevelNum === 200
+                    ? 'text-slate-600'
+                    : 'text-amber-400/80'
+                }`}
+              />
               <span className="text-[10px] font-bold">+1 Tube</span>
               <span className="text-[9px] text-slate-400 font-mono">
-                {(profile.unlockedLevel || 1) < 100
-                  ? 'Badge Locked'
-                  : profile.extraBottleCount > 0
-                  ? `${profile.extraBottleCount} left`
-                  : '100 🪙'}
+                {currentLevelNum === 100 || currentLevelNum === 200
+                  ? levelTubesAdded >= 5
+                    ? '5/5 Used'
+                    : `${5 - levelTubesAdded} left`
+                  : 'Lvl 100 & 200'}
               </span>
             </button>
           </div>
@@ -1584,7 +1647,11 @@ export default function App() {
         containers={containers}
         capacity={levelConfig.capacity}
         theme={activeTheme}
+        rewardPoints={profile.rewardPoints || 0}
+        levelNumber={currentLevelNum}
         onApplyMove={handleExecuteSolverMove}
+        onDeductPoints={handleDeductPointsForSolver}
+        onRequestWatchAd={(title, desc, onComplete) => triggerRewardedAd(title, desc, onComplete)}
         onClose={() => setIsAiSolverOpen(false)}
       />
 

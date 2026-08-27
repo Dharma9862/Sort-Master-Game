@@ -495,12 +495,17 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
                         sounds.playClick();
                         onOpenAiSolver();
                       }}
-                      className="p-2.5 rounded-xl bg-slate-800/90 hover:bg-slate-700 text-left border border-indigo-500/30 flex flex-col justify-between cursor-pointer group"
+                      className="p-2.5 rounded-xl bg-slate-800/90 hover:bg-slate-700 text-left border border-indigo-500/30 flex flex-col justify-between cursor-pointer group relative overflow-hidden"
                     >
-                      <Bot className="w-5 h-5 text-indigo-400 group-hover:scale-110 transition-transform" />
+                      <div className="flex items-center justify-between w-full">
+                        <Bot className="w-5 h-5 text-indigo-400 group-hover:scale-110 transition-transform" />
+                        <span className="px-1.5 py-0.2 rounded-md bg-amber-500/20 text-amber-300 border border-amber-500/30 text-[8.5px] font-mono font-bold">
+                          -250 ⭐
+                        </span>
+                      </div>
                       <div className="mt-2">
                         <div className="text-[11px] font-black text-white">AI Solver</div>
-                        <div className="text-[9px] text-slate-400">Step solution</div>
+                        <div className="text-[9px] text-slate-400">250 pts / solve</div>
                       </div>
                     </button>
                   )}

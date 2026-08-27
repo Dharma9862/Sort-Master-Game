@@ -103,7 +103,7 @@ export interface WithdrawalRecord {
   transactionRef: string;
 }
 
-export type WalletTransactionType = 'conversion' | 'withdrawal' | 'daily_reward' | 'achievement_reward' | 'coin_exchange' | 'ad_bonus';
+export type WalletTransactionType = 'conversion' | 'withdrawal' | 'daily_reward' | 'achievement_reward' | 'coin_exchange' | 'ad_bonus' | 'ai_solver';
 
 export interface WalletLedgerEntry {
   id: string;

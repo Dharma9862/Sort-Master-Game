@@ -23,6 +23,7 @@ import {
   Award,
   ChevronRight,
   AlertCircle,
+  Bot,
 } from 'lucide-react';
 import confetti from 'canvas-confetti';
 import { PlayerProfile, WalletLedgerEntry, WithdrawalRecord } from '../types/game';
@@ -674,33 +675,64 @@ export const WalletModal: React.FC<WalletModalProps> = ({
                 ) : (
                   <div className="space-y-2">
                     {/* Custom Ledger Entries */}
-                    {customTransactions.map((tx) => (
-                      <div
-                        key={tx.id}
-                        className="p-3 rounded-2xl bg-slate-950/80 border border-slate-800 flex items-center justify-between"
-                      >
-                        <div className="flex items-center space-x-2.5">
-                          <div className="w-9 h-9 rounded-xl bg-emerald-500/20 border border-emerald-400/30 flex items-center justify-center text-emerald-400 shrink-0">
-                            <ArrowDownLeft className="w-4 h-4" />
+                    {customTransactions.map((tx) => {
+                      const isPointsDeduction = tx.pointsChange !== undefined && tx.pointsChange < 0;
+                      const isAiSolver = tx.type === 'ai_solver';
+
+                      return (
+                        <div
+                          key={tx.id}
+                          className="p-3 rounded-2xl bg-slate-950/80 border border-slate-800 flex items-center justify-between"
+                        >
+                          <div className="flex items-center space-x-2.5">
+                            <div className={`w-9 h-9 rounded-xl border flex items-center justify-center shrink-0 ${
+                              isAiSolver
+                                ? 'bg-indigo-500/20 border-indigo-400/30 text-indigo-400'
+                                : isPointsDeduction
+                                ? 'bg-amber-500/20 border-amber-400/30 text-amber-400'
+                                : 'bg-emerald-500/20 border-emerald-400/30 text-emerald-400'
+                            }`}>
+                              {isAiSolver ? (
+                                <Bot className="w-4 h-4" />
+                              ) : isPointsDeduction ? (
+                                <ArrowUpRight className="w-4 h-4" />
+                              ) : (
+                                <ArrowDownLeft className="w-4 h-4" />
+                              )}
+                            </div>
+                            <div>
+                              <div className="text-xs font-bold text-white">{tx.title}</div>
+                              <div className="text-[10px] text-slate-400">
+                                {new Date(tx.timestamp).toLocaleDateString()} • {new Date(tx.timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                              </div>
+                            </div>
                           </div>
-                          <div>
-                            <div className="text-xs font-bold text-white">{tx.title}</div>
-                            <div className="text-[10px] text-slate-400">
-                              {new Date(tx.timestamp).toLocaleDateString()} • {new Date(tx.timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+
+                          <div className="text-right">
+                            {tx.pointsChange !== undefined ? (
+                              <div className={`text-xs font-black font-mono ${
+                                tx.pointsChange > 0 ? 'text-emerald-300' : 'text-amber-300'
+                              }`}>
+                                {tx.pointsChange > 0 ? `+${tx.pointsChange.toLocaleString()}` : tx.pointsChange.toLocaleString()} ⭐
+                              </div>
+                            ) : (
+                              <div className="text-xs font-black text-emerald-300 font-mono">
+                                +{currencyConfig.symbol}{tx.amountChange.toFixed(2)}
+                              </div>
+                            )}
+                            <div className={`text-[9px] font-bold uppercase ${
+                              isAiSolver
+                                ? 'text-indigo-400'
+                                : isPointsDeduction
+                                ? 'text-amber-400'
+                                : 'text-emerald-400'
+                            }`}>
+                              {isAiSolver ? 'AI SOLVER' : isPointsDeduction ? 'SPENT' : 'CREDITED'}
                             </div>
                           </div>
                         </div>
-
-                        <div className="text-right">
-                          <div className="text-xs font-black text-emerald-300 font-mono">
-                            +{currencyConfig.symbol}{tx.amountChange.toFixed(2)}
-                          </div>
-                          <div className="text-[9px] font-bold text-emerald-400 uppercase">
-                            CREDITED
-                          </div>
-                        </div>
-                      </div>
-                    ))}
+                      );
+                    })}
 
                     {/* Bank Cashout Records */}
                     {withdrawals.map((record) => (
