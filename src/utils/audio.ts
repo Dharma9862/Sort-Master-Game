@@ -159,6 +159,10 @@ class SoundEngine {
     }
   }
 
+  public playVictory() {
+    this.playWin();
+  }
+
   // Invalid Move / Error thud
   public playError() {
     if (this.isMuted) return;
