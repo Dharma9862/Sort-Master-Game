@@ -3,6 +3,7 @@ import { motion, AnimatePresence } from 'motion/react';
 import {
   Coins,
   Crown,
+  Heart,
   Settings,
   RotateCcw,
   Lightbulb,
@@ -95,6 +96,7 @@ export default function App() {
   const [starsEarned, setStarsEarned] = useState<number>(3);
 
   const [isVipOpen, setIsVipOpen] = useState<boolean>(false);
+  const [vipInitialTab, setVipInitialTab] = useState<'vip' | 'coins' | 'boosters' | 'themes'>('vip');
   const [isDailyOpen, setIsDailyOpen] = useState<boolean>(false);
   const [isThemeShopOpen, setIsThemeShopOpen] = useState<boolean>(false);
   const [isAchievementsOpen, setIsAchievementsOpen] = useState<boolean>(false);
@@ -579,24 +581,33 @@ export default function App() {
     updateProfile((p) => ({ ...p, notifications: [] }));
   };
 
+  const handleOpenVipShop = (tab: 'vip' | 'coins' | 'boosters' | 'themes' = 'vip') => {
+    sounds.playClick();
+    setVipInitialTab(tab);
+    setIsVipOpen(true);
+  };
+
   const handleNavigateNotificationAction = (actionType: string, actionData?: any) => {
     if (actionType === 'daily') {
       setIsDailyOpen(true);
     } else if (actionType === 'withdraw') {
       setIsWithdrawOpen(true);
     } else if (actionType === 'themes') {
-      setIsThemeShopOpen(true);
+      handleOpenVipShop('themes');
+    } else if (actionType === 'vip') {
+      handleOpenVipShop('vip');
+    } else if (actionType === 'shop' || actionType === 'coins') {
+      handleOpenVipShop('coins');
     } else if (actionType === 'solver') {
       setIsAiSolverOpen(true);
     } else if (actionType === 'lives') {
-      updateProfile((p) => ({ ...p, lives: p.maxLives }));
-      sounds.playWin();
-      setComboToast('⚡ Lives Fully Restored!');
-      setTimeout(() => setComboToast(null), 2500);
-    } else if (actionType === 'coins') {
-      updateProfile((p) => ({ ...p, coins: p.coins + 250 }));
-      sounds.playCoin();
-      setComboToast('🪙 +250 Bonus Coins Added!');
+      if (profile.vipAdFree) {
+        setComboToast('❤️ VIP Infinite Lives Active!');
+      } else {
+        updateProfile((p) => ({ ...p, lives: p.maxLives }));
+        sounds.playWin();
+        setComboToast('⚡ Lives Fully Restored!');
+      }
       setTimeout(() => setComboToast(null), 2500);
     }
   };
@@ -843,7 +854,7 @@ export default function App() {
         {/* TOP BAR */}
         <header id="game-header" className="w-full pt-2 pb-1.5 flex flex-col space-y-1.5">
           <div className="flex items-center justify-between px-1">
-            {/* Left Controls: Level, Notification, AI Solver, Coins */}
+            {/* Left Controls: Level, VIP/Lives, Coins, Notification, AI Solver */}
             <div className="flex items-center space-x-1.5">
               {/* Level & Tier Badge */}
               <button
@@ -860,6 +871,48 @@ export default function App() {
                 </span>
               </button>
 
+              {/* VIP Pass & Lives Badge */}
+              {profile.vipAdFree ? (
+                <button
+                  type="button"
+                  onClick={() => handleOpenVipShop('vip')}
+                  className="h-8 flex items-center space-x-1 px-2 rounded-xl bg-gradient-to-r from-amber-400 via-amber-500 to-yellow-500 text-slate-950 font-black text-xs shadow-md shadow-amber-500/20 cursor-pointer active:scale-95 transition-transform"
+                  title="Sort Master VIP Pass Active (Infinite Lives ❤️)"
+                >
+                  <Crown className="w-3.5 h-3.5 fill-slate-950" />
+                  <span className="text-[10px] tracking-tight font-extrabold">VIP ∞</span>
+                </button>
+              ) : (
+                <button
+                  type="button"
+                  onClick={() => handleOpenVipShop('vip')}
+                  className="h-8 flex items-center space-x-1 px-2 rounded-xl bg-slate-900/90 backdrop-blur-md border border-rose-500/30 hover:border-rose-400 text-rose-300 shadow-md cursor-pointer active:scale-95 transition-all"
+                  title={`Energy Lives: ${profile.lives}/${profile.maxLives} (Tap for VIP Pass & Infinite Lives)`}
+                >
+                  <Heart className="w-3.5 h-3.5 fill-rose-500 text-rose-500" />
+                  <span className="text-[11px] font-black font-mono text-rose-200">
+                    {profile.lives}/{profile.maxLives}
+                  </span>
+                </button>
+              )}
+
+              {/* Coins Vault Hub */}
+              <button
+                type="button"
+                onClick={() => handleOpenVipShop('coins')}
+                className="h-8 flex items-center space-x-1 px-2 rounded-xl bg-slate-900/90 backdrop-blur-md border border-amber-500/30 shadow-md cursor-pointer hover:border-amber-400 transition-colors"
+                title="Coin Vault & Shop (Click to open)"
+              >
+                <span className="text-[11px]">🪙</span>
+                <span className="text-[11px] font-black text-amber-300 font-mono">
+                  {profile.coins.toLocaleString()}
+                </span>
+                <span className="text-[10px] text-amber-400 font-bold ml-0.5">+</span>
+              </button>
+            </div>
+
+            {/* Right Controls: Notification, AI Solver, Settings */}
+            <div className="flex items-center space-x-1.5">
               {/* Notification Center */}
               <button
                 type="button"
@@ -890,28 +943,6 @@ export default function App() {
                 <span className="text-[9px] font-mono font-bold text-amber-300 hidden sm:inline">-250⭐</span>
               </button>
 
-              {/* Coins */}
-              <button
-                type="button"
-                onClick={() => {
-                  triggerRewardedAd('+100 Free Coins', 'Watch an ad to get 100 free coins!', () => {
-                    sounds.playCoin();
-                    updateProfile((p) => ({ ...p, coins: p.coins + 100 }));
-                  });
-                }}
-                className="h-8 flex items-center space-x-1 px-2 rounded-xl bg-slate-900/90 backdrop-blur-md border border-amber-500/30 shadow-md cursor-pointer hover:border-amber-400 transition-colors"
-                title="Coins Balance (Click for +100)"
-              >
-                <span className="text-[11px]">🪙</span>
-                <span className="text-[11px] font-black text-amber-300 font-mono">
-                  {profile.coins.toLocaleString()}
-                </span>
-                <span className="text-[10px] text-amber-400 font-bold ml-0.5">+</span>
-              </button>
-            </div>
-
-            {/* Right Controls: Settings */}
-            <div className="flex items-center">
               {/* Settings Button */}
               <button
                 type="button"
@@ -1385,28 +1416,210 @@ export default function App() {
         onClose={() => setIsAdOpen(false)}
       />
 
-      {/* 4. VIP Pass & Coin Store Modal */}
+      {/* 4. VIP Pass, Coin Vault & Power-up Store Modal */}
       <VipModal
         isOpen={isVipOpen}
-        isVip={profile.vipAdFree}
-        onUpgradeVip={() => {
-          updateProfile((p) => ({
-            ...p,
-            vipAdFree: true,
-            lives: p.maxLives,
-            coins: p.coins + 1000,
-            rewardPoints: (p.rewardPoints || 0) + 100000,
-            stats: {
-              ...p.stats,
-              totalPointsEarned: (p.stats.totalPointsEarned || 0) + 100000,
-            },
-          }));
+        profile={profile}
+        isOnline={isOnline}
+        initialTab={vipInitialTab}
+        onUpgradeVip={(tier, priceLabel, method) => {
+          const isLifetime = tier === 'lifetime';
+          const bonusCoins = isLifetime ? 1000 : 250;
+
+          updateProfile((p) => {
+            const txEntry: WalletLedgerEntry = {
+              id: `vip_${Date.now()}_${Math.random().toString(36).substring(2, 6)}`,
+              timestamp: Date.now(),
+              type: 'vip_purchase',
+              title: isLifetime ? 'VIP Lifetime Royal Pass' : 'VIP 7-Day Royal Pass',
+              description: `VIP Membership Activated (${priceLabel} via ${method.toUpperCase()})`,
+              amountChange: 0,
+              coinsChange: bonusCoins,
+              currency: p.preferredCurrency || 'INR',
+              referenceId: `VIP-${Math.floor(100000 + Math.random() * 900000)}`,
+              status: 'completed',
+            };
+
+            const notif: AppNotification = {
+              id: `notif_vip_${Date.now()}`,
+              title: '👑 Sort Master VIP Activated!',
+              message: `Welcome to the VIP Royal Club! Enjoy Infinite Lives, 100% Ad-Free gameplay, and +${bonusCoins} bonus coins!`,
+              type: 'vip',
+              timestamp: Date.now(),
+              read: false,
+              actionType: 'vip',
+            };
+
+            return {
+              ...p,
+              vipAdFree: true,
+              vipTier: tier,
+              lives: p.maxLives,
+              coins: p.coins + bonusCoins,
+              walletTransactions: [txEntry, ...(p.walletTransactions || [])],
+              notifications: [notif, ...(p.notifications || [])],
+            };
+          });
+
+          setComboToast(`👑 VIP Pass Activated! +${bonusCoins} 🪙 & Infinite Lives!`);
+          setTimeout(() => setComboToast(null), 3000);
         }}
-        onBuyCoins={(amount, bonus) => {
-          updateProfile((p) => ({
-            ...p,
-            coins: p.coins + amount + bonus,
-          }));
+        onBuyCoins={(amount, bonusCoins, label, priceLabel, method) => {
+          const totalCoins = amount + bonusCoins;
+          updateProfile((p) => {
+            const txEntry: WalletLedgerEntry = {
+              id: `coin_${Date.now()}_${Math.random().toString(36).substring(2, 6)}`,
+              timestamp: Date.now(),
+              type: 'shop_purchase',
+              title: label,
+              description: `Coin Vault Pack (+${totalCoins.toLocaleString()} 🪙 via ${method.toUpperCase()})`,
+              amountChange: 0,
+              coinsChange: totalCoins,
+              currency: p.preferredCurrency || 'INR',
+              referenceId: `COIN-${Math.floor(100000 + Math.random() * 900000)}`,
+              status: 'completed',
+            };
+
+            const notif: AppNotification = {
+              id: `notif_coin_${Date.now()}`,
+              title: '🪙 Coins Credited!',
+              message: `Successfully received +${totalCoins.toLocaleString()} coins from the store.`,
+              type: 'coins',
+              timestamp: Date.now(),
+              read: false,
+              actionType: 'shop',
+            };
+
+            return {
+              ...p,
+              coins: p.coins + totalCoins,
+              walletTransactions: [txEntry, ...(p.walletTransactions || [])],
+              notifications: [notif, ...(p.notifications || [])],
+            };
+          });
+
+          setComboToast(`🪙 +${totalCoins.toLocaleString()} Coins Credited!`);
+          setTimeout(() => setComboToast(null), 2500);
+        }}
+        onBuyBooster={(type, count, costCoins, itemTitle) => {
+          if (costCoins > 0 && profile.coins < costCoins) {
+            sounds.playError();
+            setComboToast('❌ Not enough coins! Visit Coin Vault.');
+            setTimeout(() => setComboToast(null), 2500);
+            return false;
+          }
+
+          updateProfile((p) => {
+            let undos = p.undoCount;
+            let hints = p.hintsCount;
+            let shuffles = p.shuffleCount;
+            let extraTubes = p.extraBottleCount;
+
+            if (type === 'undo') undos += count;
+            else if (type === 'hint') hints += count;
+            else if (type === 'shuffle') shuffles += count;
+            else if (type === 'extraBottle') extraTubes += count;
+            else if (type === 'bundle') {
+              undos += 10;
+              hints += 8;
+              shuffles += 6;
+              extraTubes += 4;
+            }
+
+            const txEntry: WalletLedgerEntry = {
+              id: `bst_${Date.now()}_${Math.random().toString(36).substring(2, 6)}`,
+              timestamp: Date.now(),
+              type: 'booster_purchase',
+              title: itemTitle,
+              description: `Power-up Store Purchase (${costCoins > 0 ? `-${costCoins} 🪙` : 'Free'})`,
+              amountChange: 0,
+              coinsChange: -costCoins,
+              currency: p.preferredCurrency || 'INR',
+              referenceId: `BST-${Math.floor(100000 + Math.random() * 900000)}`,
+              status: 'completed',
+            };
+
+            return {
+              ...p,
+              coins: Math.max(0, p.coins - costCoins),
+              undoCount: undos,
+              hintsCount: hints,
+              shuffleCount: shuffles,
+              extraBottleCount: extraTubes,
+              walletTransactions: [txEntry, ...(p.walletTransactions || [])],
+            };
+          });
+
+          setComboToast(`⚡ ${itemTitle} added to your inventory!`);
+          setTimeout(() => setComboToast(null), 2500);
+          return true;
+        }}
+        onClaimVipDailyGift={() => {
+          const todayStr = getTodayDateString();
+          updateProfile((p) => {
+            const txEntry: WalletLedgerEntry = {
+              id: `vipgift_${Date.now()}`,
+              timestamp: Date.now(),
+              type: 'daily_reward',
+              title: 'VIP Daily Care Package',
+              description: 'Claimed Daily VIP Booster & Coin Crate (+100 🪙)',
+              amountChange: 0,
+              coinsChange: 100,
+              currency: p.preferredCurrency || 'INR',
+              referenceId: `VIP-CRATE-${todayStr}`,
+              status: 'completed',
+            };
+
+            return {
+              ...p,
+              coins: p.coins + 100,
+              undoCount: p.undoCount + 2,
+              hintsCount: p.hintsCount + 2,
+              shuffleCount: p.shuffleCount + 1,
+              lastVipDailyClaimDate: todayStr,
+              walletTransactions: [txEntry, ...(p.walletTransactions || [])],
+            };
+          });
+
+          setComboToast('🎁 VIP Daily Care Package Claimed! (+100 🪙 & 5 Boosters)');
+          setTimeout(() => setComboToast(null), 3000);
+        }}
+        onWatchAdForCoins={() => {
+          triggerRewardedAd('+100 Free Store Coins', 'Watch an ad to get 100 free coins in the shop!', () => {
+            sounds.playCoin();
+            updateProfile((p) => ({ ...p, coins: p.coins + 100 }));
+            setComboToast('🪙 +100 Free Coins Added!');
+            setTimeout(() => setComboToast(null), 2500);
+          });
+        }}
+        onSelectTheme={(themeId) => {
+          updateProfile((p) => ({ ...p, currentTheme: themeId }));
+        }}
+        onBuyTheme={(themeId, cost) => {
+          updateProfile((p) => {
+            const txEntry: WalletLedgerEntry = {
+              id: `theme_${Date.now()}`,
+              timestamp: Date.now(),
+              type: 'shop_purchase',
+              title: `Unlocked Theme: ${themeId}`,
+              description: `Theme Wardrobe Purchase (-${cost} 🪙)`,
+              amountChange: 0,
+              coinsChange: -cost,
+              currency: p.preferredCurrency || 'INR',
+              referenceId: `THM-${Math.floor(100000 + Math.random() * 900000)}`,
+              status: 'completed',
+            };
+
+            return {
+              ...p,
+              coins: Math.max(0, p.coins - cost),
+              unlockedThemes: [...p.unlockedThemes, themeId],
+              currentTheme: themeId,
+              walletTransactions: [txEntry, ...(p.walletTransactions || [])],
+            };
+          });
+          setComboToast(`🎨 New Theme Unlocked & Equipped!`);
+          setTimeout(() => setComboToast(null), 2500);
         }}
         onClose={() => setIsVipOpen(false)}
       />
@@ -1567,6 +1780,7 @@ export default function App() {
         unlockedThemes={profile.unlockedThemes}
         dailyStreak={profile.dailyStreak || 1}
         isDailyClaimable={profile.lastDailyClaimDate !== getTodayDateString()}
+        isVip={profile.vipAdFree}
         isOnline={isOnline}
         isSimulatedOffline={isSimulatedOffline}
         onToggleSound={() => updateProfile((p) => ({ ...p, soundEnabled: !p.soundEnabled }))}
@@ -1581,6 +1795,10 @@ export default function App() {
         onChangeSoundVolume={(vol) => updateProfile((p) => ({ ...p, soundVolume: vol }))}
         onChangeMusicVolume={(vol) => updateProfile((p) => ({ ...p, musicVolume: vol }))}
         onSelectSoundPack={(pack) => updateProfile((p) => ({ ...p, soundPack: pack }))}
+        onOpenVip={() => {
+          setIsSettingsOpen(false);
+          handleOpenVipShop('vip');
+        }}
         onOpenWithdraw={() => setIsWithdrawOpen(true)}
         onOpenWallet={() => setIsWalletOpen(true)}
         onOpenDaily={() => setIsDailyOpen(true)}

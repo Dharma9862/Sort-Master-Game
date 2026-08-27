@@ -103,7 +103,7 @@ export interface WithdrawalRecord {
   transactionRef: string;
 }
 
-export type WalletTransactionType = 'conversion' | 'withdrawal' | 'daily_reward' | 'achievement_reward' | 'coin_exchange' | 'ad_bonus' | 'ai_solver';
+export type WalletTransactionType = 'conversion' | 'withdrawal' | 'daily_reward' | 'achievement_reward' | 'coin_exchange' | 'ad_bonus' | 'ai_solver' | 'vip_purchase' | 'shop_purchase' | 'booster_purchase';
 
 export interface WalletLedgerEntry {
   id: string;
@@ -175,6 +175,9 @@ export interface PlayerProfile {
   claimedDailyDays: number[]; // e.g. [1, 2, 3]
   achievements: Record<string, { unlocked: boolean; claimed: boolean; progress: number }>;
   vipAdFree: boolean;
+  lastVipDailyClaimDate?: string; // YYYY-MM-DD
+  vipTier?: 'lifetime' | 'weekly';
+  vipExpiresAt?: number;
   soundEnabled: boolean;
   musicEnabled: boolean;
   hapticsEnabled: boolean;
@@ -215,7 +218,10 @@ export type NotificationType =
   | 'system'
   | 'streak'
   | 'withdrawal'
-  | 'custom';
+  | 'custom'
+  | 'vip'
+  | 'coins'
+  | 'shop';
 
 export interface AppNotification {
   id: string;
@@ -224,6 +230,6 @@ export interface AppNotification {
   type: NotificationType;
   timestamp: number;
   read: boolean;
-  actionType?: 'daily' | 'withdraw' | 'themes' | 'lives' | 'solver' | 'coins' | 'referral';
+  actionType?: 'daily' | 'withdraw' | 'themes' | 'lives' | 'solver' | 'coins' | 'referral' | 'vip' | 'shop';
   actionData?: any;
 }

@@ -1,9 +1,11 @@
 import React from 'react';
 import { motion, AnimatePresence } from 'motion/react';
 import { X, Check, Lock, Sparkles, Palette } from 'lucide-react';
+import confetti from 'canvas-confetti';
 import { GAME_THEMES } from '../data/themes';
 import { ItemThemeId } from '../types/game';
 import { sounds } from '../utils/audio';
+import { triggerHaptic } from '../utils/storage';
 
 interface ThemeShopModalProps {
   isOpen: boolean;
@@ -149,6 +151,17 @@ export const ThemeShopModal: React.FC<ThemeShopModalProps> = ({
                         onClick={() => {
                           if (canAfford) {
                             sounds.playPowerup();
+                            triggerHaptic();
+                            try {
+                              confetti({
+                                particleCount: 60,
+                                spread: 60,
+                                origin: { y: 0.6 },
+                                colors: ['#A855F7', '#EC4899', '#F59E0B', '#3B82F6'],
+                              });
+                            } catch {
+                              // Ignored
+                            }
                             onBuyTheme(theme.id, theme.cost);
                           } else {
                             sounds.playError();

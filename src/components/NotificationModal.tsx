@@ -41,7 +41,7 @@ interface ScheduledItem {
   title: string;
   message: string;
   type: NotificationType;
-  actionType?: 'daily' | 'withdraw' | 'themes' | 'lives' | 'solver' | 'coins' | 'referral';
+  actionType?: AppNotification['actionType'];
   actionData?: any;
   sendWebPush: boolean;
   scheduledTime: number; // target timestamp

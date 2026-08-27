@@ -31,6 +31,7 @@ import {
   Wifi,
   WifiOff,
   Radio,
+  Crown,
 } from 'lucide-react';
 import { sounds } from '../utils/audio';
 import { GAME_THEMES } from '../data/themes';
@@ -55,6 +56,7 @@ interface SettingsModalProps {
   dailyStreak?: number;
   isDailyClaimable?: boolean;
   unclaimedDailyTasksCount?: number;
+  isVip?: boolean;
   isOnline?: boolean;
   isSimulatedOffline?: boolean;
   onToggleSound: () => void;
@@ -68,6 +70,7 @@ interface SettingsModalProps {
   onChangeMusicVolume?: (vol: number) => void;
   onSelectSoundPack?: (pack: 'water' | 'arcade' | 'marimba' | 'synth') => void;
   onResetProgress: () => void;
+  onOpenVip?: () => void;
   onOpenWithdraw?: () => void;
   onOpenWallet?: () => void;
   onOpenDaily?: () => void;
@@ -101,6 +104,7 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
   dailyStreak = 1,
   isDailyClaimable = false,
   unclaimedDailyTasksCount = 0,
+  isVip = false,
   isOnline = true,
   isSimulatedOffline = false,
   onToggleSound,
@@ -114,6 +118,7 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
   onChangeMusicVolume,
   onSelectSoundPack,
   onResetProgress,
+  onOpenVip,
   onOpenWithdraw,
   onOpenWallet,
   onOpenDaily,
@@ -186,6 +191,58 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
           {/* Tab 1: Audio, Themes & Controls */}
           {activeTab === 'settings' && (
             <div className="space-y-3.5 my-2">
+              {/* VIP Royal Pass & Coin Store Card */}
+              {onOpenVip && (
+                <div className="p-4 rounded-2xl bg-gradient-to-br from-amber-950/90 via-slate-900 to-yellow-950/90 border border-amber-500/50 shadow-xl space-y-3">
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center space-x-2">
+                      <div className="p-2 rounded-xl bg-amber-500/20 text-amber-400 border border-amber-500/30">
+                        <Crown className="w-5 h-5 fill-amber-400" />
+                      </div>
+                      <div>
+                        <h4 className="text-sm font-black text-white flex items-center space-x-2">
+                          <span>VIP Pass & Coin Store</span>
+                          {isVip && (
+                            <span className="px-1.5 py-0.2 rounded-full bg-amber-400 text-slate-950 text-[9px] font-black">
+                              ACTIVE
+                            </span>
+                          )}
+                        </h4>
+                        <p className="text-[11px] text-amber-300 font-medium">
+                          {isVip ? 'Infinite Lives, Ad-Free & Daily VIP Gifts' : 'Unlock Ad-Free, Infinite Lives & Boosters'}
+                        </p>
+                      </div>
+                    </div>
+                    <span className="px-2 py-0.5 rounded-full bg-amber-500/20 text-amber-300 border border-amber-500/40 text-[10px] font-black uppercase">
+                      ROYAL STORE
+                    </span>
+                  </div>
+
+                  <div className="p-2.5 rounded-xl bg-slate-950/60 border border-slate-800 flex items-center justify-between text-xs">
+                    <span className="text-slate-300 font-medium">
+                      {isVip ? '👑 VIP Royal Benefactor Perks Active' : '⚡ 100% Ad-Free + Infinite ❤️ Lives'}
+                    </span>
+                    <span className="text-amber-400 font-bold font-mono">
+                      {isVip ? '❤️ Infinite' : '₹349 / $3.99'}
+                    </span>
+                  </div>
+
+                  <button
+                    type="button"
+                    onClick={() => {
+                      sounds.playClick();
+                      onClose();
+                      onOpenVip();
+                    }}
+                    className="w-full py-2.5 px-4 rounded-xl bg-gradient-to-r from-amber-500 to-yellow-500 hover:from-amber-400 hover:to-yellow-400 text-slate-950 font-black text-xs shadow-lg flex items-center justify-center space-x-2 transition-all cursor-pointer transform active:scale-98"
+                  >
+                    <Crown className="w-4 h-4 fill-slate-950" />
+                    <span>{isVip ? 'Open VIP Store & Care Package' : 'Get VIP Pass & Power-ups'}</span>
+                    <ArrowRight className="w-3.5 h-3.5" />
+                  </button>
+                </div>
+              )}
+
               {/* Bank Balance & Cash Points Withdrawal Card */}
               <div className="p-4 rounded-2xl bg-gradient-to-br from-emerald-950/80 via-slate-900 to-teal-950/80 border border-emerald-500/40 shadow-xl space-y-3">
                 <div className="flex items-center justify-between">

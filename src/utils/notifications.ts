@@ -5,7 +5,7 @@ export interface SendNotificationOptions {
   title: string;
   message: string;
   type: NotificationType;
-  actionType?: 'daily' | 'withdraw' | 'themes' | 'lives' | 'solver' | 'coins' | 'referral';
+  actionType?: AppNotification['actionType'];
   actionData?: any;
   sendWebPush?: boolean;
   delayMs?: number;
@@ -16,7 +16,7 @@ export interface NotificationPreset {
   title: string;
   message: string;
   type: NotificationType;
-  actionType?: 'daily' | 'withdraw' | 'themes' | 'lives' | 'solver' | 'coins' | 'referral';
+  actionType?: AppNotification['actionType'];
   badgeLabel: string;
   iconColor: string;
 }
