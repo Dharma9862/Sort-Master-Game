@@ -169,6 +169,16 @@ export interface PlayerProfile {
   soundEnabled: boolean;
   musicEnabled: boolean;
   hapticsEnabled: boolean;
+  colorblindMode?: boolean;
+  soundVolume?: number; // 0.0 to 1.0
+  musicVolume?: number; // 0.0 to 1.0
+  soundPack?: 'water' | 'arcade' | 'marimba' | 'synth';
+  gameMode?: 'adventure' | 'zen' | 'rush';
+  rushHighScore?: number;
+  totalPlaytimeSeconds?: number;
+  notificationsEnabled?: boolean;
+  browserPushEnabled?: boolean;
+  notifications?: AppNotification[];
   stats: {
     totalMoves: number;
     levelsCompleted: number;
@@ -177,5 +187,30 @@ export interface PlayerProfile {
     adsWatched: number;
     totalPointsEarned: number;
     totalWithdrawnAmount: number;
+    bottlesSolved?: number;
+    rushLevelsCompleted?: number;
+    customLevelsSolved?: number;
+    notificationsSent?: number;
   };
+}
+
+export type NotificationType =
+  | 'reward'
+  | 'life'
+  | 'achievement'
+  | 'alert'
+  | 'system'
+  | 'streak'
+  | 'withdrawal'
+  | 'custom';
+
+export interface AppNotification {
+  id: string;
+  title: string;
+  message: string;
+  type: NotificationType;
+  timestamp: number;
+  read: boolean;
+  actionType?: 'daily' | 'withdraw' | 'themes' | 'lives' | 'solver' | 'coins';
+  actionData?: any;
 }

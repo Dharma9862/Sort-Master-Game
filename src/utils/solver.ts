@@ -59,7 +59,68 @@ function stateToKey(state: string[][]): string {
   return state.map((c) => c.join(',')).sort().join('|');
 }
 
-// Breadth-First Search to find shortest path to solution and get next optimal move
+// Full BFS solution path finder
+export function findFullSolutionPath(
+  containers: ContainerData[],
+  capacity: number,
+  maxSearchDepth: number = 4000
+): SolverMove[] | null {
+  const locked = new Set<number>();
+  containers.forEach((c, idx) => {
+    if (c.isLocked && (c.lockMovesRemaining ?? 0) > 0) {
+      locked.add(idx);
+    }
+  });
+
+  const initialState: string[][] = containers.map((c) => [...c.items]);
+
+  if (isStateSolved(initialState, capacity)) {
+    return [];
+  }
+
+  interface PathNode {
+    state: string[][];
+    moves: SolverMove[];
+  }
+
+  const queue: PathNode[] = [{ state: initialState, moves: [] }];
+  const visited = new Set<string>();
+  visited.add(stateToKey(initialState));
+
+  let iterations = 0;
+
+  while (queue.length > 0 && iterations < maxSearchDepth) {
+    iterations++;
+    const current = queue.shift()!;
+
+    if (isStateSolved(current.state, capacity)) {
+      return current.moves;
+    }
+
+    const n = current.state.length;
+    for (let i = 0; i < n; i++) {
+      for (let j = 0; j < n; j++) {
+        if (isValidMove(current.state, i, j, capacity, locked)) {
+          const nextState = current.state.map((arr) => [...arr]);
+          const item = nextState[i].pop()!;
+          nextState[j].push(item);
+
+          const key = stateToKey(nextState);
+          if (!visited.has(key)) {
+            visited.add(key);
+            const nextMove: SolverMove = { fromIndex: i, toIndex: j };
+            queue.push({
+              state: nextState,
+              moves: [...current.moves, nextMove],
+            });
+          }
+        }
+      }
+    }
+  }
+
+  return null;
+}
 export function findBestMove(
   containers: ContainerData[],
   capacity: number,

@@ -43,6 +43,44 @@ export const DEFAULT_PROFILE: PlayerProfile = {
   soundEnabled: true,
   musicEnabled: true,
   hapticsEnabled: true,
+  colorblindMode: false,
+  soundVolume: 0.8,
+  musicVolume: 0.5,
+  soundPack: 'water',
+  gameMode: 'adventure',
+  rushHighScore: 0,
+  totalPlaytimeSeconds: 0,
+  notificationsEnabled: true,
+  browserPushEnabled: false,
+  notifications: [
+    {
+      id: 'notif_welcome',
+      title: '🌟 Welcome to Sort Master!',
+      message: 'Claim your initial 100,000 Cash Points and start your puzzle streak.',
+      type: 'reward',
+      timestamp: Date.now() - 3600000,
+      read: false,
+      actionType: 'daily',
+    },
+    {
+      id: 'notif_energy_ready',
+      title: '⚡ Energy Full (5/5 Lives)',
+      message: 'Your energy tubes have recharged completely. Jump back into sorting!',
+      type: 'life',
+      timestamp: Date.now() - 1800000,
+      read: false,
+      actionType: 'lives',
+    },
+    {
+      id: 'notif_bank_ready',
+      title: '💳 UPI Withdrawal Portal Active',
+      message: 'Accumulate cash points from solving levels to redeem instant bank payouts.',
+      type: 'withdrawal',
+      timestamp: Date.now() - 600000,
+      read: false,
+      actionType: 'withdraw',
+    },
+  ],
   stats: {
     totalMoves: 0,
     levelsCompleted: 0,
@@ -51,8 +89,35 @@ export const DEFAULT_PROFILE: PlayerProfile = {
     adsWatched: 0,
     totalPointsEarned: 200000,
     totalWithdrawnAmount: 10.0,
+    bottlesSolved: 0,
+    rushLevelsCompleted: 0,
+    customLevelsSolved: 0,
+    notificationsSent: 3,
   },
 };
+
+export function exportSaveData(profile: PlayerProfile): string {
+  return JSON.stringify(profile, null, 2);
+}
+
+export function importSaveData(jsonString: string): PlayerProfile | null {
+  try {
+    const parsed = JSON.parse(jsonString);
+    if (!parsed || typeof parsed !== 'object') return null;
+    const merged: PlayerProfile = {
+      ...DEFAULT_PROFILE,
+      ...parsed,
+      stats: {
+        ...DEFAULT_PROFILE.stats,
+        ...(parsed.stats || {}),
+      },
+    };
+    saveProfile(merged);
+    return merged;
+  } catch {
+    return null;
+  }
+}
 
 export function loadProfile(): PlayerProfile {
   if (typeof window === 'undefined') return DEFAULT_PROFILE;

@@ -11,8 +11,25 @@ interface ContainerTubeProps {
   isHintTarget: boolean;
   isComplete: boolean;
   hasHiddenItems?: boolean;
+  colorblindMode?: boolean;
   onSelect: () => void;
 }
+
+// Geometric accessibility patterns for colorblind users
+const COLORBLIND_SYMBOLS: Record<string, string> = {
+  red: '🔺',
+  blue: '🟦',
+  green: '🟢',
+  yellow: '⭐',
+  purple: '💎',
+  orange: '🔶',
+  pink: '💖',
+  cyan: '❄️',
+  lime: '🍀',
+  indigo: '🌙',
+  amber: '⚡',
+  teal: '💠',
+};
 
 export const ContainerTube: React.FC<ContainerTubeProps> = ({
   container,
@@ -22,6 +39,7 @@ export const ContainerTube: React.FC<ContainerTubeProps> = ({
   isHintTarget,
   isComplete,
   hasHiddenItems,
+  colorblindMode,
   onSelect,
 }) => {
   const { items, capacity, isLocked, lockMovesRemaining, hasIce, isTemporary, tempMovesRemaining } = container;
@@ -152,6 +170,10 @@ export const ContainerTube: React.FC<ContainerTubeProps> = ({
               >
                 {isHidden ? (
                   <span className="text-sm font-black font-mono">?</span>
+                ) : colorblindMode && COLORBLIND_SYMBOLS[itemId] ? (
+                  <div className="flex items-center justify-center space-x-0.5">
+                    <span className="text-sm drop-shadow">{COLORBLIND_SYMBOLS[itemId]}</span>
+                  </div>
                 ) : (
                   <span>{conf.emoji}</span>
                 )}

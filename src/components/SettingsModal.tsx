@@ -23,6 +23,12 @@ import {
   Flame,
   Calendar,
   Target,
+  Bot,
+  BarChart3,
+  Sliders,
+  Eye,
+  SlidersHorizontal,
+  BellRing,
 } from 'lucide-react';
 import { sounds } from '../utils/audio';
 import { GAME_THEMES } from '../data/themes';
@@ -33,6 +39,11 @@ interface SettingsModalProps {
   soundEnabled: boolean;
   musicEnabled: boolean;
   hapticsEnabled: boolean;
+  colorblindMode?: boolean;
+  soundVolume?: number;
+  musicVolume?: number;
+  soundPack?: 'water' | 'arcade' | 'marimba' | 'synth';
+  notificationsEnabled?: boolean;
   rewardPoints?: number;
   bankBalance?: number;
   preferredCurrency?: string;
@@ -45,12 +56,21 @@ interface SettingsModalProps {
   onToggleSound: () => void;
   onToggleMusic: () => void;
   onToggleHaptics: () => void;
+  onToggleColorblind?: () => void;
+  onToggleNotifications?: () => void;
+  onChangeSoundVolume?: (vol: number) => void;
+  onChangeMusicVolume?: (vol: number) => void;
+  onSelectSoundPack?: (pack: 'water' | 'arcade' | 'marimba' | 'synth') => void;
   onResetProgress: () => void;
   onOpenWithdraw?: () => void;
   onOpenWallet?: () => void;
   onOpenDaily?: () => void;
   onOpenDailyTasks?: () => void;
   onOpenThemes?: () => void;
+  onOpenAiSolver?: () => void;
+  onOpenStats?: () => void;
+  onOpenCustomStudio?: () => void;
+  onOpenNotifications?: () => void;
   onSelectTheme?: (themeId: ItemThemeId) => void;
   onClose: () => void;
 }
@@ -60,6 +80,11 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
   soundEnabled,
   musicEnabled,
   hapticsEnabled,
+  colorblindMode = false,
+  soundVolume = 0.8,
+  musicVolume = 0.5,
+  soundPack = 'water',
+  notificationsEnabled = true,
   rewardPoints = 100000,
   bankBalance = 0.0,
   preferredCurrency = 'INR',
@@ -72,12 +97,21 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
   onToggleSound,
   onToggleMusic,
   onToggleHaptics,
+  onToggleColorblind,
+  onToggleNotifications,
+  onChangeSoundVolume,
+  onChangeMusicVolume,
+  onSelectSoundPack,
   onResetProgress,
   onOpenWithdraw,
   onOpenWallet,
   onOpenDaily,
   onOpenDailyTasks,
   onOpenThemes,
+  onOpenAiSolver,
+  onOpenStats,
+  onOpenCustomStudio,
+  onOpenNotifications,
   onSelectTheme,
   onClose,
 }) => {
@@ -441,62 +475,278 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
                   </button>
                 )}
               </div>
-              {/* Sound SFX */}
-              <div className="flex items-center justify-between p-3.5 rounded-2xl bg-slate-800/80 border border-slate-700/80">
-                <div className="flex items-center space-x-3">
-                  <div className="p-2 rounded-xl bg-slate-700 text-slate-300">
-                    {soundEnabled ? <Volume2 className="w-5 h-5" /> : <VolumeX className="w-5 h-5" />}
-                  </div>
-                  <div>
-                    <h4 className="text-sm font-bold text-white">Sound Effects (SFX)</h4>
-                    <p className="text-xs text-slate-400">Pours, bubble pops, and win fanfares</p>
-                  </div>
+              {/* Pro Tools & Analytics Hub */}
+              <div className="p-3.5 rounded-2xl bg-gradient-to-r from-indigo-950/70 via-slate-900 to-purple-950/70 border border-indigo-500/30 space-y-2.5">
+                <div className="flex items-center justify-between text-xs">
+                  <span className="font-bold text-indigo-300 uppercase tracking-wider flex items-center space-x-1.5">
+                    <Sparkles className="w-3.5 h-3.5 text-amber-400" />
+                    <span>Professional Suite</span>
+                  </span>
+                  <span className="text-[10px] font-mono text-indigo-400 bg-indigo-500/20 px-1.5 py-0.5 rounded">
+                    PRO MODES
+                  </span>
                 </div>
-                <button
-                  type="button"
-                  onClick={() => {
-                    sounds.playClick();
-                    onToggleSound();
-                  }}
-                  className={`w-12 h-7 rounded-full p-1 transition-colors duration-200 ease-in-out cursor-pointer ${
-                    soundEnabled ? 'bg-emerald-500' : 'bg-slate-700'
-                  }`}
-                >
-                  <div
-                    className={`w-5 h-5 rounded-full bg-white transition-transform duration-200 ease-in-out shadow ${
-                      soundEnabled ? 'translate-x-5' : 'translate-x-0'
+
+                <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
+                  {onOpenAiSolver && (
+                    <button
+                      type="button"
+                      onClick={() => {
+                        sounds.playClick();
+                        onOpenAiSolver();
+                      }}
+                      className="p-2.5 rounded-xl bg-slate-800/90 hover:bg-slate-700 text-left border border-indigo-500/30 flex flex-col justify-between cursor-pointer group"
+                    >
+                      <Bot className="w-5 h-5 text-indigo-400 group-hover:scale-110 transition-transform" />
+                      <div className="mt-2">
+                        <div className="text-[11px] font-black text-white">AI Solver</div>
+                        <div className="text-[9px] text-slate-400">Step solution</div>
+                      </div>
+                    </button>
+                  )}
+
+                  {onOpenStats && (
+                    <button
+                      type="button"
+                      onClick={() => {
+                        sounds.playClick();
+                        onOpenStats();
+                      }}
+                      className="p-2.5 rounded-xl bg-slate-800/90 hover:bg-slate-700 text-left border border-cyan-500/30 flex flex-col justify-between cursor-pointer group"
+                    >
+                      <BarChart3 className="w-5 h-5 text-cyan-400 group-hover:scale-110 transition-transform" />
+                      <div className="mt-2">
+                        <div className="text-[11px] font-black text-white">Analytics</div>
+                        <div className="text-[9px] text-slate-400">Stats & sync</div>
+                      </div>
+                    </button>
+                  )}
+
+                  {onOpenCustomStudio && (
+                    <button
+                      type="button"
+                      onClick={() => {
+                        sounds.playClick();
+                        onOpenCustomStudio();
+                      }}
+                      className="p-2.5 rounded-xl bg-slate-800/90 hover:bg-slate-700 text-left border border-purple-500/30 flex flex-col justify-between cursor-pointer group"
+                    >
+                      <Sliders className="w-5 h-5 text-purple-400 group-hover:scale-110 transition-transform" />
+                      <div className="mt-2">
+                        <div className="text-[11px] font-black text-white">Sandbox</div>
+                        <div className="text-[9px] text-slate-400">Custom level</div>
+                      </div>
+                    </button>
+                  )}
+
+                  {onOpenNotifications && (
+                    <button
+                      type="button"
+                      onClick={() => {
+                        sounds.playClick();
+                        onOpenNotifications();
+                      }}
+                      className="p-2.5 rounded-xl bg-slate-800/90 hover:bg-slate-700 text-left border border-pink-500/30 flex flex-col justify-between cursor-pointer group"
+                    >
+                      <BellRing className="w-5 h-5 text-pink-400 group-hover:scale-110 transition-transform" />
+                      <div className="mt-2">
+                        <div className="text-[11px] font-black text-white">Notifs</div>
+                        <div className="text-[9px] text-slate-400">Sender & Inbox</div>
+                      </div>
+                    </button>
+                  )}
+                </div>
+              </div>
+
+              {/* Push & In-App Notifications Toggle */}
+              {onToggleNotifications && (
+                <div className="flex items-center justify-between p-3.5 rounded-2xl bg-slate-800/80 border border-slate-700/80">
+                  <div className="flex items-center space-x-3">
+                    <div className="p-2 rounded-xl bg-slate-700 text-pink-400">
+                      <BellRing className="w-5 h-5" />
+                    </div>
+                    <div>
+                      <h4 className="text-sm font-bold text-white">Push & In-App Alerts</h4>
+                      <p className="text-xs text-slate-400">Energy full, streak alarms & coin drops</p>
+                    </div>
+                  </div>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      sounds.playClick();
+                      onToggleNotifications();
+                    }}
+                    className={`w-12 h-7 rounded-full p-1 transition-colors duration-200 ease-in-out cursor-pointer ${
+                      notificationsEnabled ? 'bg-pink-500' : 'bg-slate-700'
                     }`}
-                  />
-                </button>
+                  >
+                    <div
+                      className={`w-5 h-5 rounded-full bg-white transition-transform duration-200 ease-in-out shadow ${
+                        notificationsEnabled ? 'translate-x-5' : 'translate-x-0'
+                      }`}
+                    />
+                  </button>
+                </div>
+              )}
+
+              {/* Colorblind Mode Accessibility Toggle */}
+              {onToggleColorblind && (
+                <div className="flex items-center justify-between p-3.5 rounded-2xl bg-slate-800/80 border border-slate-700/80">
+                  <div className="flex items-center space-x-3">
+                    <div className="p-2 rounded-xl bg-slate-700 text-amber-300">
+                      <Eye className="w-5 h-5" />
+                    </div>
+                    <div>
+                      <h4 className="text-sm font-bold text-white">Colorblind Assistance</h4>
+                      <p className="text-xs text-slate-400">Shapes and glyph symbols on all items</p>
+                    </div>
+                  </div>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      sounds.playClick();
+                      onToggleColorblind();
+                    }}
+                    className={`w-12 h-7 rounded-full p-1 transition-colors duration-200 ease-in-out cursor-pointer ${
+                      colorblindMode ? 'bg-amber-500' : 'bg-slate-700'
+                    }`}
+                  >
+                    <div
+                      className={`w-5 h-5 rounded-full bg-white transition-transform duration-200 ease-in-out shadow ${
+                        colorblindMode ? 'translate-x-5' : 'translate-x-0'
+                      }`}
+                    />
+                  </button>
+                </div>
+              )}
+
+              {/* Sound SFX & Volume */}
+              <div className="p-3.5 rounded-2xl bg-slate-800/80 border border-slate-700/80 space-y-3">
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center space-x-3">
+                    <div className="p-2 rounded-xl bg-slate-700 text-slate-300">
+                      {soundEnabled ? <Volume2 className="w-5 h-5" /> : <VolumeX className="w-5 h-5" />}
+                    </div>
+                    <div>
+                      <h4 className="text-sm font-bold text-white">Sound Effects (SFX)</h4>
+                      <p className="text-xs text-slate-400">Pours, bubble pops, and win fanfares</p>
+                    </div>
+                  </div>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      sounds.playClick();
+                      onToggleSound();
+                    }}
+                    className={`w-12 h-7 rounded-full p-1 transition-colors duration-200 ease-in-out cursor-pointer ${
+                      soundEnabled ? 'bg-emerald-500' : 'bg-slate-700'
+                    }`}
+                  >
+                    <div
+                      className={`w-5 h-5 rounded-full bg-white transition-transform duration-200 ease-in-out shadow ${
+                        soundEnabled ? 'translate-x-5' : 'translate-x-0'
+                      }`}
+                    />
+                  </button>
+                </div>
+
+                {soundEnabled && onChangeSoundVolume && (
+                  <div className="pt-2 border-t border-slate-700/60 flex items-center space-x-3">
+                    <span className="text-[11px] text-slate-400 font-semibold w-16">Volume:</span>
+                    <input
+                      type="range"
+                      min="0"
+                      max="1"
+                      step="0.05"
+                      value={soundVolume}
+                      onChange={(e) => onChangeSoundVolume(Number(e.target.value))}
+                      className="flex-1 accent-emerald-500 cursor-pointer"
+                    />
+                    <span className="text-[11px] font-mono text-emerald-400 w-10 text-right">
+                      {Math.round(soundVolume * 100)}%
+                    </span>
+                  </div>
+                )}
+
+                {/* Sound Pack Preset Selector */}
+                {soundEnabled && onSelectSoundPack && (
+                  <div className="pt-2 border-t border-slate-700/60">
+                    <div className="text-[11px] text-slate-400 font-semibold mb-2">Sound Audio Profile:</div>
+                    <div className="grid grid-cols-4 gap-1.5">
+                      {[
+                        { id: 'water', label: '💧 Water' },
+                        { id: 'arcade', label: '👾 8-Bit' },
+                        { id: 'marimba', label: '🪵 Wood' },
+                        { id: 'synth', label: '🪐 Synth' },
+                      ].map((pack) => (
+                        <button
+                          key={pack.id}
+                          type="button"
+                          onClick={() => {
+                            sounds.playClick();
+                            onSelectSoundPack(pack.id as 'water' | 'arcade' | 'marimba' | 'synth');
+                          }}
+                          className={`py-1.5 rounded-lg text-[10px] font-bold border transition-all cursor-pointer ${
+                            soundPack === pack.id
+                              ? 'bg-emerald-500/20 text-emerald-300 border-emerald-400'
+                              : 'bg-slate-900 border-slate-700 text-slate-400'
+                          }`}
+                        >
+                          {pack.label}
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+                )}
               </div>
 
               {/* Music */}
-              <div className="flex items-center justify-between p-3.5 rounded-2xl bg-slate-800/80 border border-slate-700/80">
-                <div className="flex items-center space-x-3">
-                  <div className="p-2 rounded-xl bg-slate-700 text-slate-300">
-                    <Music className="w-5 h-5" />
+              <div className="p-3.5 rounded-2xl bg-slate-800/80 border border-slate-700/80 space-y-3">
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center space-x-3">
+                    <div className="p-2 rounded-xl bg-slate-700 text-slate-300">
+                      <Music className="w-5 h-5" />
+                    </div>
+                    <div>
+                      <h4 className="text-sm font-bold text-white">Ambient Zen Music</h4>
+                      <p className="text-xs text-slate-400">Calming generative lofi chords</p>
+                    </div>
                   </div>
-                  <div>
-                    <h4 className="text-sm font-bold text-white">Ambient Zen Music</h4>
-                    <p className="text-xs text-slate-400">Calming generative lofi chords</p>
-                  </div>
-                </div>
-                <button
-                  type="button"
-                  onClick={() => {
-                    sounds.playClick();
-                    onToggleMusic();
-                  }}
-                  className={`w-12 h-7 rounded-full p-1 transition-colors duration-200 ease-in-out cursor-pointer ${
-                    musicEnabled ? 'bg-emerald-500' : 'bg-slate-700'
-                  }`}
-                >
-                  <div
-                    className={`w-5 h-5 rounded-full bg-white transition-transform duration-200 ease-in-out shadow ${
-                      musicEnabled ? 'translate-x-5' : 'translate-x-0'
+                  <button
+                    type="button"
+                    onClick={() => {
+                      sounds.playClick();
+                      onToggleMusic();
+                    }}
+                    className={`w-12 h-7 rounded-full p-1 transition-colors duration-200 ease-in-out cursor-pointer ${
+                      musicEnabled ? 'bg-emerald-500' : 'bg-slate-700'
                     }`}
-                  />
-                </button>
+                  >
+                    <div
+                      className={`w-5 h-5 rounded-full bg-white transition-transform duration-200 ease-in-out shadow ${
+                        musicEnabled ? 'translate-x-5' : 'translate-x-0'
+                      }`}
+                    />
+                  </button>
+                </div>
+
+                {musicEnabled && onChangeMusicVolume && (
+                  <div className="pt-2 border-t border-slate-700/60 flex items-center space-x-3">
+                    <span className="text-[11px] text-slate-400 font-semibold w-16">Volume:</span>
+                    <input
+                      type="range"
+                      min="0"
+                      max="1"
+                      step="0.05"
+                      value={musicVolume}
+                      onChange={(e) => onChangeMusicVolume(Number(e.target.value))}
+                      className="flex-1 accent-emerald-500 cursor-pointer"
+                    />
+                    <span className="text-[11px] font-mono text-emerald-400 w-10 text-right">
+                      {Math.round(musicVolume * 100)}%
+                    </span>
+                  </div>
+                )}
               </div>
 
               {/* Haptics */}

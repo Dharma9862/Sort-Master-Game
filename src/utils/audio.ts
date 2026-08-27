@@ -2,6 +2,9 @@ class SoundEngine {
   private ctx: AudioContext | null = null;
   private isMuted: boolean = false;
   private isMusicMuted: boolean = false;
+  private soundVolume: number = 0.8;
+  private musicVolume: number = 0.5;
+  private soundPack: 'water' | 'arcade' | 'marimba' | 'synth' = 'water';
   private musicInterval: number | null = null;
 
   private initCtx() {
@@ -29,6 +32,18 @@ class SoundEngine {
     }
   }
 
+  public setSoundVolume(volume: number) {
+    this.soundVolume = Math.max(0, Math.min(1, volume));
+  }
+
+  public setMusicVolume(volume: number) {
+    this.musicVolume = Math.max(0, Math.min(1, volume));
+  }
+
+  public setSoundPack(pack: 'water' | 'arcade' | 'marimba' | 'synth') {
+    this.soundPack = pack;
+  }
+
   // Soft glass/bubble pick up
   public playLift() {
     if (this.isMuted) return;
@@ -40,11 +55,26 @@ class SoundEngine {
       const gain = this.ctx.createGain();
       const now = this.ctx.currentTime;
 
-      osc.type = 'sine';
-      osc.frequency.setValueAtTime(420, now);
-      osc.frequency.exponentialRampToValueAtTime(840, now + 0.12);
+      if (this.soundPack === 'arcade') {
+        osc.type = 'square';
+        osc.frequency.setValueAtTime(330, now);
+        osc.frequency.setValueAtTime(660, now + 0.05);
+      } else if (this.soundPack === 'marimba') {
+        osc.type = 'triangle';
+        osc.frequency.setValueAtTime(520, now);
+        osc.frequency.exponentialRampToValueAtTime(1040, now + 0.08);
+      } else if (this.soundPack === 'synth') {
+        osc.type = 'sawtooth';
+        osc.frequency.setValueAtTime(400, now);
+        osc.frequency.exponentialRampToValueAtTime(800, now + 0.1);
+      } else {
+        // water default
+        osc.type = 'sine';
+        osc.frequency.setValueAtTime(420, now);
+        osc.frequency.exponentialRampToValueAtTime(840, now + 0.12);
+      }
 
-      gain.gain.setValueAtTime(0.2, now);
+      gain.gain.setValueAtTime(0.2 * this.soundVolume, now);
       gain.gain.exponentialRampToValueAtTime(0.001, now + 0.12);
 
       osc.connect(gain);
@@ -68,11 +98,26 @@ class SoundEngine {
       const gain = this.ctx.createGain();
       const now = this.ctx.currentTime;
 
-      osc.type = 'triangle';
-      osc.frequency.setValueAtTime(650, now);
-      osc.frequency.exponentialRampToValueAtTime(320, now + 0.15);
+      if (this.soundPack === 'arcade') {
+        osc.type = 'square';
+        osc.frequency.setValueAtTime(580, now);
+        osc.frequency.setValueAtTime(290, now + 0.06);
+      } else if (this.soundPack === 'marimba') {
+        osc.type = 'sine';
+        osc.frequency.setValueAtTime(780, now);
+        osc.frequency.exponentialRampToValueAtTime(390, now + 0.1);
+      } else if (this.soundPack === 'synth') {
+        osc.type = 'sawtooth';
+        osc.frequency.setValueAtTime(600, now);
+        osc.frequency.exponentialRampToValueAtTime(200, now + 0.14);
+      } else {
+        // water default
+        osc.type = 'triangle';
+        osc.frequency.setValueAtTime(650, now);
+        osc.frequency.exponentialRampToValueAtTime(320, now + 0.15);
+      }
 
-      gain.gain.setValueAtTime(0.25, now);
+      gain.gain.setValueAtTime(0.25 * this.soundVolume, now);
       gain.gain.exponentialRampToValueAtTime(0.001, now + 0.15);
 
       osc.connect(gain);
@@ -314,6 +359,39 @@ class SoundEngine {
     }
   }
 
+  // Notification Chime / Bell
+  public playNotificationChime() {
+    if (this.isMuted) return;
+    this.initCtx();
+    if (!this.ctx) return;
+
+    try {
+      const now = this.ctx.currentTime;
+      const notes = [659.25, 830.61, 987.77]; // E5, G#5, B5 chime
+
+      notes.forEach((freq, idx) => {
+        if (!this.ctx) return;
+        const osc = this.ctx.createOscillator();
+        const gain = this.ctx.createGain();
+        const startTime = now + idx * 0.08;
+
+        osc.type = 'sine';
+        osc.frequency.setValueAtTime(freq, startTime);
+
+        gain.gain.setValueAtTime(0.22 * this.soundVolume, startTime);
+        gain.gain.exponentialRampToValueAtTime(0.001, startTime + 0.35);
+
+        osc.connect(gain);
+        gain.connect(this.ctx.destination);
+
+        osc.start(startTime);
+        osc.stop(startTime + 0.36);
+      });
+    } catch {
+      // Audio ignore
+    }
+  }
+
   // Background Ambient Chord Progression
   public startMusic() {
     if (this.isMusicMuted || this.musicInterval) return;
@@ -343,7 +421,7 @@ class SoundEngine {
           osc.type = 'sine';
           osc.frequency.setValueAtTime(f * 2, t);
 
-          gain.gain.setValueAtTime(0.02, t);
+          gain.gain.setValueAtTime(0.04 * this.musicVolume, t);
           gain.gain.exponentialRampToValueAtTime(0.0001, t + 3.8);
 
           osc.connect(gain);

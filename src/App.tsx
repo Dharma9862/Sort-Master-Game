@@ -22,14 +22,21 @@ import {
   VolumeX,
   Building2,
   Wallet,
+  Bot,
+  BarChart3,
+  Eye,
+  Sliders,
+  Bell,
+  BellRing,
 } from 'lucide-react';
 
-import { ContainerData, LevelConfig, PlayerProfile, ItemThemeId, MoveSnapshot, WithdrawalRecord, WalletLedgerEntry } from './types/game';
+import { ContainerData, LevelConfig, PlayerProfile, ItemThemeId, MoveSnapshot, WithdrawalRecord, WalletLedgerEntry, AppNotification } from './types/game';
 import { GAME_THEMES } from './data/themes';
 import { generateLevel, getTierInfo } from './utils/levelGenerator';
 import { findBestMove, isStateSolved } from './utils/solver';
 import { sounds } from './utils/audio';
 import { loadProfile, saveProfile, getTodayDateString, triggerHaptic } from './utils/storage';
+import { triggerBrowserNotification } from './utils/notifications';
 
 // Modals
 import { ContainerTube } from './components/ContainerTube';
@@ -44,6 +51,10 @@ import { SettingsModal } from './components/SettingsModal';
 import { LevelSelectModal } from './components/LevelSelectModal';
 import { WithdrawModal } from './components/WithdrawModal';
 import { WalletModal } from './components/WalletModal';
+import { AiSolverModal } from './components/AiSolverModal';
+import { StatsModal } from './components/StatsModal';
+import { CustomLevelModal } from './components/CustomLevelModal';
+import { NotificationModal } from './components/NotificationModal';
 
 // Calculate scaled Withdrawable Cash Points per level (100,000 Points = ₹10.00 INR)
 export function getLevelPointsReward(levelNum: number): number {
@@ -86,6 +97,13 @@ export default function App() {
   const [isLevelSelectOpen, setIsLevelSelectOpen] = useState<boolean>(false);
   const [isWithdrawOpen, setIsWithdrawOpen] = useState<boolean>(false);
   const [isWalletOpen, setIsWalletOpen] = useState<boolean>(false);
+  const [isAiSolverOpen, setIsAiSolverOpen] = useState<boolean>(false);
+  const [isStatsOpen, setIsStatsOpen] = useState<boolean>(false);
+  const [isCustomStudioOpen, setIsCustomStudioOpen] = useState<boolean>(false);
+  const [isNotificationOpen, setIsNotificationOpen] = useState<boolean>(false);
+  const [activeNotificationToast, setActiveNotificationToast] = useState<AppNotification | null>(null);
+  const notificationToastTimerRef = useRef<number | null>(null);
+  const [comboToast, setComboToast] = useState<string | null>(null);
 
   // Ad Modal State
   const [isAdOpen, setIsAdOpen] = useState<boolean>(false);
@@ -105,11 +123,33 @@ export default function App() {
   // Life recharge timer ticker
   const [timeToNextLife, setTimeToNextLife] = useState<string>('');
 
-  // Sync Audio Settings
+  // Sync Audio Settings & Volume Profiles
   useEffect(() => {
     sounds.setSoundEnabled(profile.soundEnabled);
     sounds.setMusicEnabled(profile.musicEnabled);
-  }, [profile.soundEnabled, profile.musicEnabled]);
+    if (profile.soundVolume !== undefined) {
+      sounds.setSoundVolume(profile.soundVolume);
+    }
+    if (profile.musicVolume !== undefined) {
+      sounds.setMusicVolume(profile.musicVolume);
+    }
+    if (profile.soundPack) {
+      sounds.setSoundPack(profile.soundPack);
+    }
+  }, [profile.soundEnabled, profile.musicEnabled, profile.soundVolume, profile.musicVolume, profile.soundPack]);
+
+  // Track playtime in background
+  useEffect(() => {
+    const playTimer = setInterval(() => {
+      setProfile((prev) => {
+        const nextSec = (prev.totalPlaytimeSeconds || 0) + 10;
+        const next = { ...prev, totalPlaytimeSeconds: nextSec };
+        saveProfile(next);
+        return next;
+      });
+    }, 10000);
+    return () => clearInterval(playTimer);
+  }, []);
 
   // Save profile helper
   const updateProfile = useCallback((updater: (prev: PlayerProfile) => PlayerProfile) => {
@@ -413,6 +453,115 @@ export default function App() {
     checkVictory(newContainers, nextMovesUsed);
   };
 
+  // Direct move execution from AI Solver Walkthrough
+  const handleExecuteSolverMove = (fromIdx: number, toIdx: number) => {
+    if (fromIdx < 0 || fromIdx >= containers.length || toIdx < 0 || toIdx >= containers.length) return;
+    const src = containers[fromIdx];
+    const tgt = containers[toIdx];
+    if (!src || !tgt || src.items.length === 0) return;
+
+    setSelectedContainerId(src.id);
+    setTimeout(() => {
+      handleContainerTap(tgt.id);
+    }, 50);
+  };
+
+  // Play custom level from Sandbox Studio
+  const handlePlayCustomLevel = (config: LevelConfig) => {
+    setLevelConfig(config);
+    setContainers(config.containers.map((c) => ({ ...c, items: [...c.items] })));
+    setCurrentLevelNum(999);
+    setSelectedContainerId(null);
+    setMoveHistory([]);
+    setMovesUsed(0);
+    setRemainingMoves(config.maxMoves ?? null);
+    setTimeRemaining(config.timeLimitSeconds ?? null);
+    setIsVictoryOpen(false);
+    setIsGameOverOpen(false);
+    setHintMove(null);
+    setIsExtraBottleAdded(false);
+  };
+
+  // --- NOTIFICATION SYSTEM HANDLERS ---
+  const handleSendNotification = useCallback(
+    (notif: AppNotification, showToast: boolean = true, triggerWebPush: boolean = true) => {
+      updateProfile((p) => {
+        const existing = p.notifications || [];
+        const updated = [notif, ...existing.filter((n) => n.id !== notif.id)].slice(0, 40);
+        return {
+          ...p,
+          notifications: updated,
+          stats: {
+            ...p.stats,
+            notificationsSent: (p.stats.notificationsSent || 0) + 1,
+          },
+        };
+      });
+
+      if (showToast && (profile.notificationsEnabled ?? true)) {
+        setActiveNotificationToast(notif);
+        if (notificationToastTimerRef.current) {
+          clearTimeout(notificationToastTimerRef.current);
+        }
+        notificationToastTimerRef.current = window.setTimeout(() => {
+          setActiveNotificationToast(null);
+        }, 4500);
+      }
+
+      if (triggerWebPush && profile.browserPushEnabled) {
+        triggerBrowserNotification(notif.title, notif.message);
+      }
+    },
+    [profile.notificationsEnabled, profile.browserPushEnabled, updateProfile]
+  );
+
+  const handleMarkNotificationAsRead = (id: string) => {
+    updateProfile((p) => {
+      const updated = (p.notifications || []).map((n) => (n.id === id ? { ...n, read: true } : n));
+      return { ...p, notifications: updated };
+    });
+  };
+
+  const handleMarkAllNotificationsAsRead = () => {
+    updateProfile((p) => {
+      const updated = (p.notifications || []).map((n) => ({ ...n, read: true }));
+      return { ...p, notifications: updated };
+    });
+  };
+
+  const handleDeleteNotification = (id: string) => {
+    updateProfile((p) => {
+      const updated = (p.notifications || []).filter((n) => n.id !== id);
+      return { ...p, notifications: updated };
+    });
+  };
+
+  const handleClearAllNotifications = () => {
+    updateProfile((p) => ({ ...p, notifications: [] }));
+  };
+
+  const handleNavigateNotificationAction = (actionType: string, actionData?: any) => {
+    if (actionType === 'daily') {
+      setIsDailyOpen(true);
+    } else if (actionType === 'withdraw') {
+      setIsWithdrawOpen(true);
+    } else if (actionType === 'themes') {
+      setIsThemeShopOpen(true);
+    } else if (actionType === 'solver') {
+      setIsAiSolverOpen(true);
+    } else if (actionType === 'lives') {
+      updateProfile((p) => ({ ...p, lives: p.maxLives }));
+      sounds.playWin();
+      setComboToast('⚡ Lives Fully Restored!');
+      setTimeout(() => setComboToast(null), 2500);
+    } else if (actionType === 'coins') {
+      updateProfile((p) => ({ ...p, coins: p.coins + 250 }));
+      sounds.playCoin();
+      setComboToast('🪙 +250 Bonus Coins Added!');
+      setTimeout(() => setComboToast(null), 2500);
+    }
+  };
+
   // --- POWER-UPS & BOOSTERS ---
 
   // 1. Undo Move
@@ -641,7 +790,7 @@ export default function App() {
       {/* Mobile Game Container Shell */}
       <div className="w-full max-w-md h-full flex-1 flex flex-col justify-between relative">
         {/* TOP BAR */}
-        <header className="w-full pt-1 pb-2 flex flex-col space-y-2">
+        <header id="game-header" className="w-full pt-4 pb-2 flex flex-col space-y-2">
           <div className="flex items-center justify-between px-2">
             {/* Lives & Refill */}
             <button
@@ -679,26 +828,52 @@ export default function App() {
               </span>
             </button>
 
-            {/* Right Controls: Wallet, Coins & Settings */}
+            {/* Right Controls: Notification Sender, AI Solver, Colorblind, Coins, Settings */}
             <div className="flex items-center space-x-1.5">
-              {/* Virtual Wallet */}
+              {/* Notification Sender & Center */}
               <button
                 type="button"
                 onClick={() => {
                   sounds.playClick();
-                  setIsWalletOpen(true);
+                  setIsNotificationOpen(true);
                 }}
-                className="flex items-center space-x-1 px-2.5 py-1.5 rounded-2xl bg-gradient-to-r from-emerald-950/80 to-slate-900/90 backdrop-blur-md border border-emerald-500/40 shadow-lg cursor-pointer hover:border-emerald-400 hover:scale-105 transition-all text-xs"
-                title="Open Virtual Wallet"
+                className="p-1.5 rounded-2xl bg-slate-900/80 backdrop-blur-md border border-pink-500/40 hover:border-pink-400 text-pink-300 hover:text-white transition-colors cursor-pointer shadow-lg relative"
+                title="Notification Sender & Inbox"
               >
-                <Wallet className="w-3.5 h-3.5 text-emerald-400" />
-                <span className="font-mono font-black text-emerald-300 text-xs">
-                  {profile.preferredCurrency === 'INR' || !profile.preferredCurrency ? '₹' : '$'}
-                  {(profile.bankBalance || 0).toFixed(0)}
-                </span>
-                {(profile.rewardPoints || 0) >= 100000 && (
-                  <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse" />
+                <Bell className="w-4 h-4" />
+                {(profile.notifications || []).some((n) => !n.read) && (
+                  <span className="w-2.5 h-2.5 rounded-full bg-pink-500 ring-2 ring-slate-900 animate-pulse absolute -top-0.5 -right-0.5 flex items-center justify-center" />
                 )}
+              </button>
+
+              {/* Quick AI Solver Walkthrough */}
+              <button
+                type="button"
+                onClick={() => {
+                  sounds.playClick();
+                  setIsAiSolverOpen(true);
+                }}
+                className="p-1.5 rounded-2xl bg-slate-900/80 backdrop-blur-md border border-indigo-500/40 hover:border-indigo-400 text-indigo-300 hover:text-white transition-colors cursor-pointer shadow-lg"
+                title="AI Solver Walkthrough"
+              >
+                <Bot className="w-4 h-4" />
+              </button>
+
+              {/* Quick Colorblind Mode toggle */}
+              <button
+                type="button"
+                onClick={() => {
+                  sounds.playClick();
+                  updateProfile((p) => ({ ...p, colorblindMode: !p.colorblindMode }));
+                }}
+                className={`p-1.5 rounded-2xl backdrop-blur-md border transition-colors cursor-pointer shadow-lg ${
+                  profile.colorblindMode
+                    ? 'bg-amber-500/20 border-amber-400 text-amber-300 ring-1 ring-amber-400'
+                    : 'bg-slate-900/80 border-slate-700 text-slate-400 hover:text-white'
+                }`}
+                title="Toggle Colorblind Mode"
+              >
+                <Eye className="w-4 h-4" />
               </button>
 
               {/* Coins & Add Coins */}
@@ -728,13 +903,73 @@ export default function App() {
                   sounds.playClick();
                   setIsSettingsOpen(true);
                 }}
-                className="p-2 rounded-2xl bg-slate-900/80 backdrop-blur-md border border-slate-700 hover:border-slate-500 text-slate-300 hover:text-white transition-colors cursor-pointer"
-                title="Settings & Hub"
+                className="p-2 rounded-2xl bg-slate-900/80 backdrop-blur-md border border-slate-700 hover:border-slate-500 text-slate-300 hover:text-white transition-colors cursor-pointer relative"
+                title="Settings & Wallet Hub"
               >
                 <Settings className="w-4 h-4" />
+                {(profile.rewardPoints || 0) >= 100000 && (
+                  <span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse absolute -top-0.5 -right-0.5" />
+                )}
               </button>
             </div>
           </div>
+
+          {/* Floating Interactive Toast Notification Banner */}
+          <AnimatePresence>
+            {activeNotificationToast && (
+              <motion.div
+                initial={{ opacity: 0, y: -16, scale: 0.95 }}
+                animate={{ opacity: 1, y: 0, scale: 1 }}
+                exit={{ opacity: 0, y: -16, scale: 0.95 }}
+                className="p-3 rounded-2xl bg-gradient-to-r from-slate-900 via-indigo-950 to-slate-900 border border-indigo-400/50 shadow-2xl text-white flex items-center justify-between space-x-3 cursor-pointer"
+                onClick={() => {
+                  sounds.playClick();
+                  handleMarkNotificationAsRead(activeNotificationToast.id);
+                  if (activeNotificationToast.actionType) {
+                    handleNavigateNotificationAction(activeNotificationToast.actionType, activeNotificationToast.actionData);
+                  } else {
+                    setIsNotificationOpen(true);
+                  }
+                  setActiveNotificationToast(null);
+                }}
+              >
+                <div className="flex items-center space-x-2.5 min-w-0">
+                  <div className="p-2 rounded-xl bg-indigo-500/20 text-indigo-300 border border-indigo-400/30 flex-shrink-0 animate-bounce">
+                    <BellRing className="w-4 h-4" />
+                  </div>
+                  <div className="min-w-0">
+                    <div className="text-xs font-black text-white truncate flex items-center space-x-1.5">
+                      <span>{activeNotificationToast.title}</span>
+                      <span className="text-[9px] font-bold text-indigo-300 bg-indigo-500/20 px-1 rounded">
+                        NEW
+                      </span>
+                    </div>
+                    <p className="text-[11px] text-slate-300 truncate">
+                      {activeNotificationToast.message}
+                    </p>
+                  </div>
+                </div>
+
+                <div className="flex items-center space-x-1.5 flex-shrink-0">
+                  {activeNotificationToast.actionType && (
+                    <span className="text-[10px] font-black text-indigo-300 bg-indigo-600/40 hover:bg-indigo-600/60 px-2 py-1 rounded-lg border border-indigo-400/40 transition-colors">
+                      Action →
+                    </span>
+                  )}
+                  <button
+                    type="button"
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      setActiveNotificationToast(null);
+                    }}
+                    className="p-1 rounded-lg text-slate-400 hover:text-white"
+                  >
+                    ✕
+                  </button>
+                </div>
+              </motion.div>
+            )}
+          </AnimatePresence>
 
           {/* Secondary Sub-Bar (Moves / Timer / Multi-stage tracker) */}
           <div className="flex items-center justify-between px-3 py-1 bg-slate-950/40 backdrop-blur-sm rounded-2xl border border-slate-800/80 text-xs">
@@ -828,6 +1063,7 @@ export default function App() {
                   isHintTarget={isHintTgt}
                   isComplete={isComplete}
                   hasHiddenItems={levelConfig.hasHiddenItems}
+                  colorblindMode={profile.colorblindMode}
                   onSelect={() => handleContainerTap(container.id)}
                 />
               );
@@ -963,19 +1199,19 @@ export default function App() {
               <span className="text-[10px] font-bold">Badges</span>
             </button>
 
-            {/* Virtual Wallet */}
+            {/* Daily Gift / Daily Login */}
             <button
               type="button"
               onClick={() => {
                 sounds.playClick();
-                setIsWalletOpen(true);
+                setIsDailyOpen(true);
               }}
-              className="flex flex-col items-center space-y-1 py-1 px-1 rounded-xl text-emerald-400 hover:text-emerald-300 hover:bg-emerald-950/30 transition-all cursor-pointer relative"
+              className="flex flex-col items-center space-y-1 py-1 px-1 rounded-xl text-amber-400 hover:text-amber-300 hover:bg-amber-950/30 transition-all cursor-pointer relative"
             >
-              <Wallet className="w-4 h-4 text-emerald-400" />
-              <span className="text-[10px] font-black">Wallet</span>
-              {(profile.rewardPoints || 0) >= 100000 && (
-                <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-ping absolute top-1 right-3" />
+              <Gift className="w-4 h-4 text-amber-400" />
+              <span className="text-[10px] font-bold">Daily Gift</span>
+              {profile.lastDailyClaimDate !== getTodayDateString() && (
+                <span className="w-2 h-2 rounded-full bg-amber-400 animate-pulse absolute top-0.5 right-3" />
               )}
             </button>
 
@@ -1261,6 +1497,11 @@ export default function App() {
         soundEnabled={profile.soundEnabled}
         musicEnabled={profile.musicEnabled}
         hapticsEnabled={profile.hapticsEnabled}
+        colorblindMode={profile.colorblindMode}
+        soundVolume={profile.soundVolume ?? 0.8}
+        musicVolume={profile.musicVolume ?? 0.5}
+        soundPack={profile.soundPack || 'water'}
+        notificationsEnabled={profile.notificationsEnabled ?? true}
         rewardPoints={profile.rewardPoints || 0}
         bankBalance={profile.bankBalance || 0}
         preferredCurrency={profile.preferredCurrency || 'INR'}
@@ -1272,10 +1513,33 @@ export default function App() {
         onToggleSound={() => updateProfile((p) => ({ ...p, soundEnabled: !p.soundEnabled }))}
         onToggleMusic={() => updateProfile((p) => ({ ...p, musicEnabled: !p.musicEnabled }))}
         onToggleHaptics={() => updateProfile((p) => ({ ...p, hapticsEnabled: !p.hapticsEnabled }))}
+        onToggleColorblind={() => updateProfile((p) => ({ ...p, colorblindMode: !p.colorblindMode }))}
+        onToggleNotifications={() =>
+          updateProfile((p) => ({ ...p, notificationsEnabled: !p.notificationsEnabled }))
+        }
+        onChangeSoundVolume={(vol) => updateProfile((p) => ({ ...p, soundVolume: vol }))}
+        onChangeMusicVolume={(vol) => updateProfile((p) => ({ ...p, musicVolume: vol }))}
+        onSelectSoundPack={(pack) => updateProfile((p) => ({ ...p, soundPack: pack }))}
         onOpenWithdraw={() => setIsWithdrawOpen(true)}
         onOpenWallet={() => setIsWalletOpen(true)}
         onOpenDaily={() => setIsDailyOpen(true)}
         onOpenThemes={() => setIsThemeShopOpen(true)}
+        onOpenAiSolver={() => {
+          setIsSettingsOpen(false);
+          setIsAiSolverOpen(true);
+        }}
+        onOpenStats={() => {
+          setIsSettingsOpen(false);
+          setIsStatsOpen(true);
+        }}
+        onOpenCustomStudio={() => {
+          setIsSettingsOpen(false);
+          setIsCustomStudioOpen(true);
+        }}
+        onOpenNotifications={() => {
+          setIsSettingsOpen(false);
+          setIsNotificationOpen(true);
+        }}
         onSelectTheme={(themeId) => updateProfile((p) => ({ ...p, currentTheme: themeId }))}
         onResetProgress={() => {
           localStorage.clear();
@@ -1312,6 +1576,60 @@ export default function App() {
           setIsLevelSelectOpen(false);
         }}
         onClose={() => setIsLevelSelectOpen(false)}
+      />
+
+      {/* 12. Professional AI Solver Step-by-Step Walkthrough Modal */}
+      <AiSolverModal
+        isOpen={isAiSolverOpen}
+        containers={containers}
+        capacity={levelConfig.capacity}
+        theme={activeTheme}
+        onApplyMove={handleExecuteSolverMove}
+        onClose={() => setIsAiSolverOpen(false)}
+      />
+
+      {/* 13. Professional Stats & Save Data Management Modal */}
+      <StatsModal
+        isOpen={isStatsOpen}
+        profile={profile}
+        onImportProfile={(imported) => {
+          setProfile(imported);
+          saveProfile(imported);
+          loadLevel(imported.unlockedLevel || 1);
+        }}
+        onClose={() => setIsStatsOpen(false)}
+      />
+
+      {/* 14. Professional Custom Sandbox Studio Modal */}
+      <CustomLevelModal
+        isOpen={isCustomStudioOpen}
+        currentTheme={profile.currentTheme}
+        onPlayCustomLevel={(customConfig) => {
+          handlePlayCustomLevel(customConfig);
+          setIsCustomStudioOpen(false);
+        }}
+        onClose={() => setIsCustomStudioOpen(false)}
+      />
+
+      {/* 15. Notification Center & Sender Studio Modal */}
+      <NotificationModal
+        isOpen={isNotificationOpen}
+        notifications={profile.notifications || []}
+        notificationsEnabled={profile.notificationsEnabled ?? true}
+        browserPushEnabled={profile.browserPushEnabled ?? false}
+        onSendNotification={handleSendNotification}
+        onMarkAsRead={handleMarkNotificationAsRead}
+        onMarkAllAsRead={handleMarkAllNotificationsAsRead}
+        onDeleteNotification={handleDeleteNotification}
+        onClearAllNotifications={handleClearAllNotifications}
+        onToggleNotifications={() =>
+          updateProfile((p) => ({ ...p, notificationsEnabled: !p.notificationsEnabled }))
+        }
+        onToggleBrowserPush={(enabled) =>
+          updateProfile((p) => ({ ...p, browserPushEnabled: enabled }))
+        }
+        onNavigateAction={handleNavigateNotificationAction}
+        onClose={() => setIsNotificationOpen(false)}
       />
     </div>
   );
