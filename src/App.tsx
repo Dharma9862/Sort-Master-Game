@@ -1,7 +1,6 @@
 import React, { useState, useEffect, useCallback, useRef } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
 import {
-  Heart,
   Coins,
   Crown,
   Settings,
@@ -24,14 +23,12 @@ import {
   Wallet,
   Bot,
   BarChart3,
-  Eye,
   Sliders,
   Bell,
   BellRing,
-  Smartphone,
 } from 'lucide-react';
 
-import { ContainerData, LevelConfig, PlayerProfile, ItemThemeId, MoveSnapshot, WithdrawalRecord, WalletLedgerEntry, AppNotification, ReferralRecord } from './types/game';
+import { ContainerData, LevelConfig, PlayerProfile, ItemThemeId, MoveSnapshot, WithdrawalRecord, WalletLedgerEntry, AppNotification } from './types/game';
 import { GAME_THEMES } from './data/themes';
 import { generateLevel, getTierInfo } from './utils/levelGenerator';
 import { findBestMove, isStateSolved } from './utils/solver';
@@ -56,8 +53,6 @@ import { AiSolverModal } from './components/AiSolverModal';
 import { StatsModal } from './components/StatsModal';
 import { CustomLevelModal } from './components/CustomLevelModal';
 import { NotificationModal } from './components/NotificationModal';
-import { ReferralModal } from './components/ReferralModal';
-import { PlayStorePublishModal } from './components/PlayStorePublishModal';
 
 // Calculate scaled Withdrawable Cash Points per level (100,000 Points = ₹10.00 INR)
 export function getLevelPointsReward(levelNum: number): number {
@@ -100,8 +95,6 @@ export default function App() {
   const [isLevelSelectOpen, setIsLevelSelectOpen] = useState<boolean>(false);
   const [isWithdrawOpen, setIsWithdrawOpen] = useState<boolean>(false);
   const [isWalletOpen, setIsWalletOpen] = useState<boolean>(false);
-  const [isReferralOpen, setIsReferralOpen] = useState<boolean>(false);
-  const [isPlayStorePublishOpen, setIsPlayStorePublishOpen] = useState<boolean>(false);
   const [isAiSolverOpen, setIsAiSolverOpen] = useState<boolean>(false);
   const [isStatsOpen, setIsStatsOpen] = useState<boolean>(false);
   const [isCustomStudioOpen, setIsCustomStudioOpen] = useState<boolean>(false);
@@ -588,8 +581,6 @@ export default function App() {
       setIsThemeShopOpen(true);
     } else if (actionType === 'solver') {
       setIsAiSolverOpen(true);
-    } else if (actionType === 'referral') {
-      setIsReferralOpen(true);
     } else if (actionType === 'lives') {
       updateProfile((p) => ({ ...p, lives: p.maxLives }));
       sounds.playWin();
@@ -601,120 +592,6 @@ export default function App() {
       setComboToast('🪙 +250 Bonus Coins Added!');
       setTimeout(() => setComboToast(null), 2500);
     }
-  };
-
-  // --- REFERRAL BONUS (+100 PTS PER REFER) SYSTEM ---
-  const handleClaimReferralBonus = (points: number = 100, friendName: string, code: string) => {
-    sounds.playWin();
-    const newRef: ReferralRecord = {
-      id: `ref_${Date.now()}_${Math.random().toString(36).substring(2, 6)}`,
-      friendName: friendName || 'Invited Player',
-      code: code || profile.referralCode || 'SORT-8492X',
-      date: Date.now(),
-      pointsAwarded: points,
-      status: 'completed',
-    };
-
-    const txEntry: WalletLedgerEntry = {
-      id: `ref_tx_${Date.now()}_${Math.random().toString(36).substring(2, 6)}`,
-      timestamp: Date.now(),
-      type: 'referral_bonus',
-      title: `Referral Bonus (+${points} Pts)`,
-      description: `Friend ${newRef.friendName} joined with code ${newRef.code}`,
-      amountChange: 0,
-      pointsChange: points,
-      currency: profile.preferredCurrency || 'INR',
-      referenceId: `REF-${Math.floor(100000 + Math.random() * 900000)}`,
-      status: 'completed',
-    };
-
-    updateProfile((p) => {
-      const nextList = [newRef, ...(p.referralsList || [])];
-      return {
-        ...p,
-        rewardPoints: (p.rewardPoints || 0) + points,
-        referralCount: (p.referralCount || 0) + 1,
-        referralsList: nextList,
-        walletTransactions: [txEntry, ...(p.walletTransactions || [])],
-        stats: {
-          ...p.stats,
-          totalPointsEarned: (p.stats.totalPointsEarned || 0) + points,
-          referralPointsEarned: (p.stats.referralPointsEarned || 0) + points,
-          totalReferrals: (p.stats.totalReferrals || 0) + 1,
-        },
-      };
-    });
-
-    handleSendNotification(
-      {
-        id: `notif_ref_${Date.now()}`,
-        title: '👥 Friend Joined with Your Code!',
-        message: `+${points} Cash Points added to your wallet! Total referrals: ${(profile.referralCount || 0) + 1}`,
-        type: 'reward',
-        timestamp: Date.now(),
-        read: false,
-        actionType: 'referral',
-      },
-      true,
-      true
-    );
-  };
-
-  const handleEnterFriendCode = (code: string): { success: boolean; message: string } => {
-    const normalized = code.trim().toUpperCase();
-    if (!normalized || normalized.length < 4) {
-      return { success: false, message: 'Please enter a valid referral code.' };
-    }
-    if (normalized === (profile.referralCode || '').toUpperCase()) {
-      return { success: false, message: 'You cannot use your own referral code!' };
-    }
-    if (profile.referredByCode) {
-      return { success: false, message: 'You have already claimed a referral welcome reward.' };
-    }
-
-    const points = 100;
-    sounds.playWin();
-
-    const txEntry: WalletLedgerEntry = {
-      id: `ref_welcome_${Date.now()}`,
-      timestamp: Date.now(),
-      type: 'referral_welcome',
-      title: `Referral Welcome Gift (+${points} Pts)`,
-      description: `Claimed welcome bonus using friend's code ${normalized}`,
-      amountChange: 0,
-      pointsChange: points,
-      currency: profile.preferredCurrency || 'INR',
-      referenceId: `REF-${Math.floor(100000 + Math.random() * 900000)}`,
-      status: 'completed',
-    };
-
-    updateProfile((p) => ({
-      ...p,
-      rewardPoints: (p.rewardPoints || 0) + points,
-      coins: p.coins + 100,
-      referredByCode: normalized,
-      walletTransactions: [txEntry, ...(p.walletTransactions || [])],
-      stats: {
-        ...p.stats,
-        totalPointsEarned: (p.stats.totalPointsEarned || 0) + points,
-      },
-    }));
-
-    handleSendNotification(
-      {
-        id: `notif_welcome_ref_${Date.now()}`,
-        title: '🎁 Welcome Bonus Claimed (+100 Pts)!',
-        message: `You received +100 Cash Points and +100 Coins for using code ${normalized}.`,
-        type: 'reward',
-        timestamp: Date.now(),
-        read: false,
-        actionType: 'referral',
-      },
-      true,
-      true
-    );
-
-    return { success: true, message: '🎉 +100 Points and +100 Coins credited successfully!' };
   };
 
   // --- POWER-UPS & BOOSTERS ---
@@ -957,126 +834,56 @@ export default function App() {
       {/* Mobile Game Container Shell */}
       <div className="w-full max-w-md h-full flex-1 flex flex-col justify-between relative">
         {/* TOP BAR */}
-        <header id="game-header" className="w-full pt-4 pb-2 flex flex-col space-y-2">
-          <div className="flex items-center justify-between px-2">
-            {/* Lives & Refill */}
-            <button
-              type="button"
-              onClick={() => {
-                if (profile.lives < profile.maxLives) {
-                  triggerRewardedAd('Refill Lives', 'Watch a video to instantly restore full 5 Lives ❤️', () => {
-                    updateProfile((p) => ({ ...p, lives: p.maxLives }));
-                  });
-                }
-              }}
-              className="flex items-center space-x-1.5 px-3 py-1.5 rounded-2xl bg-slate-900/80 backdrop-blur-md border border-rose-500/40 shadow-lg cursor-pointer hover:scale-105 transition-transform"
-            >
-              <Heart className="w-4 h-4 fill-rose-500 text-rose-500 animate-pulse" />
-              <span className="text-xs font-black text-rose-300">
-                {profile.vipAdFree ? '∞' : profile.lives}
-              </span>
-              {timeToNextLife && !profile.vipAdFree && (
-                <span className="text-[10px] font-mono text-slate-400">({timeToNextLife})</span>
-              )}
-            </button>
-
-            {/* Level & Tier Badge */}
-            <button
-              type="button"
-              onClick={() => {
-                sounds.playClick();
-                setIsLevelSelectOpen(true);
-              }}
-              className="flex items-center space-x-1.5 px-3.5 py-1.5 rounded-2xl bg-slate-900/80 backdrop-blur-md border border-slate-700 shadow-lg cursor-pointer hover:border-amber-400 transition-colors"
-            >
-              <span className="text-xs font-black text-white">Lvl {currentLevelNum}</span>
-              <span className={`px-2 py-0.5 rounded-full text-[10px] font-bold ${tierInfo.badgeColor}`}>
-                {levelConfig.stageTier}
-              </span>
-            </button>
-
-            {/* Right Controls: Notification Sender, AI Solver, Colorblind, Coins, Settings */}
+        <header id="game-header" className="w-full pt-2 pb-1.5 flex flex-col space-y-1.5">
+          <div className="flex items-center justify-between px-1">
+            {/* Left Controls: Level, Notification, AI Solver, Coins */}
             <div className="flex items-center space-x-1.5">
-              {/* Notification Sender & Center */}
+              {/* Level & Tier Badge */}
+              <button
+                type="button"
+                onClick={() => {
+                  sounds.playClick();
+                  setIsLevelSelectOpen(true);
+                }}
+                className="h-8 flex items-center space-x-1.5 px-2.5 rounded-xl bg-slate-900/90 backdrop-blur-md border border-slate-700/80 shadow-md cursor-pointer hover:border-amber-400 transition-colors"
+              >
+                <span className="text-xs font-black text-white">Lvl {currentLevelNum}</span>
+                <span className={`px-1.5 py-0.2 rounded-md text-[9px] font-bold ${tierInfo.badgeColor}`}>
+                  {levelConfig.stageTier}
+                </span>
+              </button>
+
+              {/* Notification Center */}
               <button
                 type="button"
                 onClick={() => {
                   sounds.playClick();
                   setIsNotificationOpen(true);
                 }}
-                className="p-1.5 rounded-2xl bg-slate-900/80 backdrop-blur-md border border-pink-500/40 hover:border-pink-400 text-pink-300 hover:text-white transition-colors cursor-pointer shadow-lg relative"
-                title="Notification Sender & Inbox"
+                className="w-8 h-8 rounded-xl bg-slate-900/90 backdrop-blur-md border border-pink-500/30 hover:border-pink-400 text-pink-300 hover:text-white transition-colors cursor-pointer shadow-md flex items-center justify-center relative"
+                title="Notifications"
               >
                 <Bell className="w-4 h-4" />
                 {(profile.notifications || []).some((n) => !n.read) && (
-                  <span className="w-2.5 h-2.5 rounded-full bg-pink-500 ring-2 ring-slate-900 animate-pulse absolute -top-0.5 -right-0.5 flex items-center justify-center" />
+                  <span className="w-2 h-2 rounded-full bg-pink-500 ring-2 ring-slate-900 animate-pulse absolute top-1 right-1" />
                 )}
               </button>
 
-              {/* Refer & Earn (+100 Pts) Bonus Button */}
-              <button
-                type="button"
-                onClick={() => {
-                  sounds.playClick();
-                  setIsReferralOpen(true);
-                }}
-                className="p-1.5 rounded-2xl bg-gradient-to-br from-purple-900/80 to-slate-900/80 backdrop-blur-md border border-purple-500/50 hover:border-purple-400 text-purple-300 hover:text-white transition-colors cursor-pointer shadow-lg relative"
-                title="Refer & Earn +100 Points"
-              >
-                <Gift className="w-4 h-4 text-pink-400" />
-                <span className="absolute -bottom-1 -right-1 bg-amber-400 text-slate-950 font-black text-[8px] px-1 rounded-full shadow">
-                  +100
-                </span>
-              </button>
-
-              {/* Play Store & Mobile App Publishing Hub */}
-              <button
-                type="button"
-                onClick={() => {
-                  sounds.playClick();
-                  setIsPlayStorePublishOpen(true);
-                }}
-                className="p-1.5 rounded-2xl bg-gradient-to-br from-emerald-950/90 to-slate-900/90 backdrop-blur-md border border-emerald-500/50 hover:border-emerald-400 text-emerald-300 hover:text-white transition-colors cursor-pointer shadow-lg relative"
-                title="Play Store & Mobile App APK Publishing Suite"
-              >
-                <Smartphone className="w-4 h-4 text-emerald-400" />
-                <span className="absolute -bottom-1 -right-1 bg-emerald-400 text-slate-950 font-black text-[7px] px-1 rounded-full shadow">
-                  APK
-                </span>
-              </button>
-
-              {/* Quick AI Solver Walkthrough */}
+              {/* AI Solver */}
               <button
                 type="button"
                 onClick={() => {
                   sounds.playClick();
                   setIsAiSolverOpen(true);
                 }}
-                className="px-2 py-1.5 rounded-2xl bg-slate-900/80 backdrop-blur-md border border-indigo-500/40 hover:border-indigo-400 text-indigo-300 hover:text-white transition-colors cursor-pointer shadow-lg flex items-center space-x-1"
-                title="AI Solver Walkthrough (250 ⭐ Points per solve)"
+                className="h-8 px-2 rounded-xl bg-slate-900/90 backdrop-blur-md border border-indigo-500/30 hover:border-indigo-400 text-indigo-300 hover:text-white transition-colors cursor-pointer shadow-md flex items-center space-x-1"
+                title="AI Solver (-250 ⭐)"
               >
                 <Bot className="w-4 h-4" />
                 <span className="text-[9px] font-mono font-bold text-amber-300 hidden sm:inline">-250⭐</span>
               </button>
 
-              {/* Quick Colorblind Mode toggle */}
-              <button
-                type="button"
-                onClick={() => {
-                  sounds.playClick();
-                  updateProfile((p) => ({ ...p, colorblindMode: !p.colorblindMode }));
-                }}
-                className={`p-1.5 rounded-2xl backdrop-blur-md border transition-colors cursor-pointer shadow-lg ${
-                  profile.colorblindMode
-                    ? 'bg-amber-500/20 border-amber-400 text-amber-300 ring-1 ring-amber-400'
-                    : 'bg-slate-900/80 border-slate-700 text-slate-400 hover:text-white'
-                }`}
-                title="Toggle Colorblind Mode"
-              >
-                <Eye className="w-4 h-4" />
-              </button>
-
-              {/* Coins & Add Coins */}
+              {/* Coins */}
               <button
                 type="button"
                 onClick={() => {
@@ -1085,30 +892,31 @@ export default function App() {
                     updateProfile((p) => ({ ...p, coins: p.coins + 100 }));
                   });
                 }}
-                className="flex items-center space-x-1 px-2.5 py-1.5 rounded-2xl bg-slate-900/80 backdrop-blur-md border border-amber-500/40 shadow-lg cursor-pointer hover:scale-105 transition-transform"
+                className="h-8 flex items-center space-x-1 px-2 rounded-xl bg-slate-900/90 backdrop-blur-md border border-amber-500/30 shadow-md cursor-pointer hover:border-amber-400 transition-colors"
+                title="Coins Balance (Click for +100)"
               >
-                <span className="text-xs">🪙</span>
-                <span className="text-xs font-black text-amber-300 font-mono">
+                <span className="text-[11px]">🪙</span>
+                <span className="text-[11px] font-black text-amber-300 font-mono">
                   {profile.coins.toLocaleString()}
                 </span>
-                <span className="w-3.5 h-3.5 rounded-full bg-amber-500 text-slate-950 font-black text-[9px] flex items-center justify-center">
-                  +
-                </span>
+                <span className="text-[10px] text-amber-400 font-bold ml-0.5">+</span>
               </button>
+            </div>
 
-              {/* Menu / Settings */}
+            {/* Right Control: Settings Only */}
+            <div className="flex items-center">
               <button
                 type="button"
                 onClick={() => {
                   sounds.playClick();
                   setIsSettingsOpen(true);
                 }}
-                className="p-2 rounded-2xl bg-slate-900/80 backdrop-blur-md border border-slate-700 hover:border-slate-500 text-slate-300 hover:text-white transition-colors cursor-pointer relative"
+                className="w-8 h-8 rounded-xl bg-slate-900/90 backdrop-blur-md border border-slate-700/80 hover:border-slate-500 text-slate-300 hover:text-white transition-colors cursor-pointer shadow-md flex items-center justify-center relative"
                 title="Settings & Wallet Hub"
               >
                 <Settings className="w-4 h-4" />
                 {(profile.rewardPoints || 0) >= 100000 && (
-                  <span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse absolute -top-0.5 -right-0.5" />
+                  <span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse absolute top-1 right-1" />
                 )}
               </button>
             </div>
@@ -1756,14 +1564,6 @@ export default function App() {
           setIsSettingsOpen(false);
           setIsNotificationOpen(true);
         }}
-        onOpenReferral={() => {
-          setIsSettingsOpen(false);
-          setIsReferralOpen(true);
-        }}
-        onOpenPlayStorePublish={() => {
-          setIsSettingsOpen(false);
-          setIsPlayStorePublishOpen(true);
-        }}
         onSelectTheme={(themeId) => updateProfile((p) => ({ ...p, currentTheme: themeId }))}
         onResetProgress={() => {
           localStorage.clear();
@@ -1780,10 +1580,6 @@ export default function App() {
         onOpenWithdraw={() => {
           setIsWalletOpen(false);
           setIsWithdrawOpen(true);
-        }}
-        onOpenReferral={() => {
-          setIsWalletOpen(false);
-          setIsReferralOpen(true);
         }}
         onConvertPointsToCash={handleConvertPointsToCash}
         onCurrencyChange={(curr) => updateProfile((p) => ({ ...p, preferredCurrency: curr }))}
@@ -1862,30 +1658,6 @@ export default function App() {
         }
         onNavigateAction={handleNavigateNotificationAction}
         onClose={() => setIsNotificationOpen(false)}
-      />
-
-      {/* 16. Referral & Earn Bonus (+100 Points Per Refer) Modal */}
-      <ReferralModal
-        isOpen={isReferralOpen}
-        referralCode={profile.referralCode || 'SORT-8492X'}
-        referralCount={profile.referralCount || (profile.referralsList?.length ?? 0)}
-        referralsList={profile.referralsList || []}
-        referredByCode={profile.referredByCode}
-        rewardPoints={profile.rewardPoints || 0}
-        preferredCurrency={profile.preferredCurrency || 'INR'}
-        onClaimReferralBonus={handleClaimReferralBonus}
-        onEnterFriendCode={handleEnterFriendCode}
-        onOpenWallet={() => {
-          setIsReferralOpen(false);
-          setIsWalletOpen(true);
-        }}
-        onClose={() => setIsReferralOpen(false)}
-      />
-
-      {/* 17. Web to Mobile App & Google Play Store Publishing Hub */}
-      <PlayStorePublishModal
-        isOpen={isPlayStorePublishOpen}
-        onClose={() => setIsPlayStorePublishOpen(false)}
       />
     </div>
   );
