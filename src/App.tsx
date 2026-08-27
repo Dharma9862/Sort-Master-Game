@@ -26,9 +26,7 @@ import {
   Sliders,
   Bell,
   BellRing,
-  Wifi,
   WifiOff,
-  Radio,
 } from 'lucide-react';
 
 import { ContainerData, LevelConfig, PlayerProfile, ItemThemeId, MoveSnapshot, WithdrawalRecord, WalletLedgerEntry, AppNotification } from './types/game';
@@ -912,35 +910,8 @@ export default function App() {
               </button>
             </div>
 
-            {/* Right Controls: Network Hub & Settings */}
-            <div className="flex items-center space-x-1.5">
-              {/* Network Status / Mode Toggle Hub */}
-              <button
-                type="button"
-                onClick={() => {
-                  sounds.playClick();
-                  setIsNetworkHubOpen(true);
-                }}
-                className={`h-8 px-2 rounded-xl backdrop-blur-md border shadow-md flex items-center space-x-1 transition-all cursor-pointer ${
-                  isOnline
-                    ? 'bg-slate-900/90 border-emerald-500/40 hover:border-emerald-400 text-emerald-400'
-                    : 'bg-amber-950/80 border-amber-500/60 hover:border-amber-400 text-amber-300 animate-pulse'
-                }`}
-                title={isOnline ? 'Network Online (Click for Network Hub)' : 'Offline Mode Active (Click to inspect)'}
-              >
-                {isOnline ? (
-                  <>
-                    <Wifi className="w-3.5 h-3.5 text-emerald-400" />
-                    <span className="text-[10px] font-bold text-emerald-300 hidden sm:inline">Online</span>
-                  </>
-                ) : (
-                  <>
-                    <WifiOff className="w-3.5 h-3.5 text-amber-400" />
-                    <span className="text-[10px] font-black text-amber-300">Offline</span>
-                  </>
-                )}
-              </button>
-
+            {/* Right Controls: Settings */}
+            <div className="flex items-center">
               {/* Settings Button */}
               <button
                 type="button"
@@ -1577,7 +1548,7 @@ export default function App() {
         onClose={() => setIsWithdrawOpen(false)}
       />
 
-      {/* 9. Settings & Wallet / Hub / Themes / Daily / APK Guide Modal */}
+      {/* 9. Settings & Wallet / Hub / Themes / Daily Modal */}
       <SettingsModal
         isOpen={isSettingsOpen}
         soundEnabled={profile.soundEnabled}

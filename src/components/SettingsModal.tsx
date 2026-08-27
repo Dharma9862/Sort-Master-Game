@@ -12,7 +12,6 @@ import {
   Layers,
   Award,
   ExternalLink,
-  Code2,
   Building2,
   ArrowRight,
   Wallet,
@@ -79,7 +78,6 @@ interface SettingsModalProps {
   onOpenCustomStudio?: () => void;
   onOpenNotifications?: () => void;
   onOpenReferral?: () => void;
-  onOpenPlayStorePublish?: () => void;
   onSelectTheme?: (themeId: ItemThemeId) => void;
   onClose: () => void;
 }
@@ -126,11 +124,10 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
   onOpenCustomStudio,
   onOpenNotifications,
   onOpenReferral,
-  onOpenPlayStorePublish,
   onSelectTheme,
   onClose,
 }) => {
-  const [activeTab, setActiveTab] = useState<'settings' | 'guide' | 'apk'>('settings');
+  const [activeTab, setActiveTab] = useState<'settings' | 'guide'>('settings');
   const [showResetConfirm, setShowResetConfirm] = useState(false);
 
   if (!isOpen) return null;
@@ -183,17 +180,6 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
               }`}
             >
               How to Play
-            </button>
-            <button
-              type="button"
-              onClick={() => setActiveTab('apk')}
-              className={`flex-1 py-1.5 rounded-lg text-xs font-bold transition-all ${
-                activeTab === 'apk'
-                  ? 'bg-amber-500/20 text-amber-300 border border-amber-500/40 shadow'
-                  : 'text-amber-400/80 hover:text-amber-300'
-              }`}
-            >
-              📱 APK / Store
             </button>
           </div>
 
@@ -963,67 +949,6 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
                   <li><strong>Locked / Ice:</strong> Make moves or match adjacent colors to unfreeze.</li>
                 </ul>
               </div>
-            </div>
-          )}
-
-          {/* Tab 3: APK & Google Play Publishing Guide */}
-          {activeTab === 'apk' && (
-            <div className="space-y-3 my-2 text-xs text-slate-300">
-              <div className="p-3.5 rounded-2xl bg-gradient-to-br from-amber-950/60 to-slate-900 border border-amber-500/40">
-                <div className="flex items-center space-x-2 text-amber-400 font-bold mb-1">
-                  <Smartphone className="w-4 h-4" />
-                  <span className="text-sm">Ready for Android APK & Play Store</span>
-                </div>
-                <p className="text-[11px] text-slate-300">
-                  This game is built with 100% responsive portrait mobile viewport, touch events,
-                  offline Web Audio API synth, and zero heavy dependencies.
-                </p>
-              </div>
-
-              <div className="p-3 rounded-2xl bg-slate-800/80 border border-slate-700/80">
-                <h4 className="font-bold text-white mb-1 flex items-center space-x-1.5">
-                  <Code2 className="w-4 h-4 text-cyan-400" />
-                  <span>1. Export with Capacitor (Quickest)</span>
-                </h4>
-                <div className="font-mono bg-slate-950 p-2 rounded-lg text-[10px] text-emerald-300 space-y-1 my-1 overflow-x-auto">
-                  <div># 1. Build web assets</div>
-                  <div>npm run build</div>
-                  <div className="text-slate-500"># 2. Add Capacitor Android</div>
-                  <div>npm i @capacitor/core @capacitor/android @capacitor/cli</div>
-                  <div>npx cap init "Sort Master" "com.sortmaster.puzzle"</div>
-                  <div>npx cap add android</div>
-                  <div>npx cap open android</div>
-                </div>
-                <p className="text-[11px] text-slate-400 mt-1">
-                  Android Studio will open immediately! Click <strong>Build &gt; Generate Signed Bundle / APK</strong>.
-                </p>
-              </div>
-
-              <div className="p-3 rounded-2xl bg-slate-800/80 border border-slate-700/80">
-                <h4 className="font-bold text-white mb-1 flex items-center space-x-1.5">
-                  <Sparkles className="w-4 h-4 text-yellow-400" />
-                  <span>2. Google Play AdMob Integration</span>
-                </h4>
-                <p className="text-[11px] text-slate-300">
-                  In Android Studio or via `@capacitor-community/admob`, replace the rewarded ad trigger
-                  with your official AdMob App ID and Ad Unit IDs (`ca-app-pub-XXXX`).
-                </p>
-              </div>
-
-              {onOpenPlayStorePublish && (
-                <button
-                  type="button"
-                  onClick={() => {
-                    sounds.playClick();
-                    onClose();
-                    onOpenPlayStorePublish();
-                  }}
-                  className="w-full py-3 px-4 rounded-2xl bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-500 hover:to-teal-500 text-white font-black text-xs shadow-lg flex items-center justify-center space-x-2 cursor-pointer transition-all active:scale-98"
-                >
-                  <Smartphone className="w-4 h-4" />
-                  <span>Open Full Play Store & APK Publishing Studio</span>
-                </button>
-              )}
             </div>
           )}
         </motion.div>
